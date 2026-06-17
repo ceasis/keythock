@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:keythock}",
+      "name": "Debug ThockStudio",
+      "target": "ThockStudio",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug ThockStudio"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:keythock}",
+      "name": "Release ThockStudio",
+      "target": "ThockStudio",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release ThockStudio"
+    }
+  ]
+}

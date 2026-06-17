@@ -16,7 +16,7 @@ final class KeyboardEventService {
     private var eventTaps: [CFMachPort] = []
     private var runLoopSources: [CFRunLoopSource] = []
     private var globalMonitor: Any?
-    private var lastDeliveredEvent: DeliveredEventSignature?
+    private var lastDeliveredByKeyPhase: [DeliveredEventSignature: TimeInterval] = [:]
     private(set) var state: ListenerState = .stopped {
         didSet { onStateChange?(state) }
     }
@@ -88,7 +88,7 @@ final class KeyboardEventService {
         eventTaps = []
         runLoopSources = []
         globalMonitor = nil
-        lastDeliveredEvent = nil
+        lastDeliveredByKeyPhase = [:]
         state = .stopped
     }
 
@@ -171,14 +171,13 @@ final class KeyboardEventService {
     }
 
     private func deliver(_ keyEvent: KeyEvent) {
-        let signature = DeliveredEventSignature(keyCode: keyEvent.keyCode, phase: keyEvent.phase, timestamp: keyEvent.timestamp)
-        if let lastDeliveredEvent,
-           lastDeliveredEvent.keyCode == signature.keyCode,
-           lastDeliveredEvent.phase == signature.phase,
-           abs(lastDeliveredEvent.timestamp - signature.timestamp) < 0.03 {
+        let signature = DeliveredEventSignature(keyCode: keyEvent.keyCode, phase: keyEvent.phase)
+        let now = ProcessInfo.processInfo.systemUptime
+        if let lastDeliveredAt = lastDeliveredByKeyPhase[signature],
+           now - lastDeliveredAt < 0.045 {
             return
         }
-        lastDeliveredEvent = signature
+        lastDeliveredByKeyPhase[signature] = now
         onDebug?("keyboard.event key=\(keyEvent.keyCode) phase=\(keyEvent.phase.rawValue) repeat=\(keyEvent.isRepeat) app=\(keyEvent.sourceAppBundleId ?? "unknown")")
         onEvent?(keyEvent)
     }
@@ -193,10 +192,9 @@ final class KeyboardEventService {
     }
 }
 
-private struct DeliveredEventSignature {
+private struct DeliveredEventSignature: Hashable {
     let keyCode: Int
     let phase: KeyPhase
-    let timestamp: TimeInterval
 }
 
 extension KeyboardEventService.ListenerState {

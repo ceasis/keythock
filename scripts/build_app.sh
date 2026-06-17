@@ -15,6 +15,16 @@ if [[ "${SIGNING_PROFILE}" == "appstore" && -z "${ENTITLEMENTS}" ]]; then
   ENTITLEMENTS="Resources/ThockStudio.entitlements"
 fi
 
+# Stable code-signing identity so TCC grants (Input Monitoring) survive rebuilds.
+# Ad-hoc signatures (--sign -) get a new hash every build and silently drop the
+# permission. Override with THOCK_STUDIO_SIGNING_IDENTITY; auto-detects an Apple
+# Development cert; falls back to ad-hoc only if no identity is available.
+SIGNING_IDENTITY="${THOCK_STUDIO_SIGNING_IDENTITY:-}"
+if [[ -z "${SIGNING_IDENTITY}" ]]; then
+  SIGNING_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | awk '/Apple Development/ {print $2; exit}')"
+fi
+SIGNING_IDENTITY="${SIGNING_IDENTITY:--}"
+
 swift build -c release
 
 rm -rf "${APP_DIR}"
@@ -68,14 +78,19 @@ PLIST
 
 if command -v codesign >/dev/null 2>&1; then
   if [[ -f "${ENTITLEMENTS}" ]]; then
-    codesign --force --deep --sign - --entitlements "${ENTITLEMENTS}" "${APP_DIR}" >/dev/null
+    codesign --force --deep --sign "${SIGNING_IDENTITY}" --entitlements "${ENTITLEMENTS}" "${APP_DIR}" >/dev/null
   else
-    codesign --force --deep --sign - "${APP_DIR}" >/dev/null
+    codesign --force --deep --sign "${SIGNING_IDENTITY}" "${APP_DIR}" >/dev/null
   fi
 fi
 
 echo "Built ${APP_DIR}"
 echo "Signing profile: ${SIGNING_PROFILE}"
+if [[ "${SIGNING_IDENTITY}" == "-" ]]; then
+  echo "Signing identity: ad-hoc (TCC grants will NOT survive rebuilds)"
+else
+  echo "Signing identity: ${SIGNING_IDENTITY}"
+fi
 if [[ -n "${ENTITLEMENTS}" ]]; then
   echo "Entitlements: ${ENTITLEMENTS}"
 else

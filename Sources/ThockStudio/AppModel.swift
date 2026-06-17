@@ -368,14 +368,15 @@ final class AppModel: ObservableObject {
 
     private func handle(_ event: KeyEvent) {
         debugLog.append("app.handle key=\(event.keyCode) category=\(event.category.rawValue) phase=\(event.phase.rawValue) repeat=\(event.isRepeat)")
+        // Modifier flag changes (Shift/Ctrl/Cmd/Opt) reach us through the global-monitor
+        // fallback even without Input Monitoring permission, so they don't prove access.
+        // Only a real keyDown/keyUp — which macOS withholds without the grant — counts.
+        if event.phase != .modifierChanged {
+            permissions.markKeyboardEventObserved()
+        }
         if event.phase == .down || event.phase == .modifierChanged {
             lastKeyboardEventDate = Date()
             lastKeyboardEventSummary = "\(event.category.displayName) key \(event.keyCode)"
-        }
-        permissions.refresh(listenerIsRunning: keyboard.isRunning)
-        guard permissions.state == .approved else {
-            noteTypingPlayback("Skipped: \(permissions.state.label)")
-            return
         }
         if isTypingPreviewFocused && event.sourceAppBundleId == Bundle.main.bundleIdentifier {
             noteTypingPlayback("Skipped: in-app preview pad handled this key")

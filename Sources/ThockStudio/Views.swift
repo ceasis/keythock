@@ -25,134 +25,283 @@ struct MenuBarPopoverView: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(systemName: model.menuBarSymbol)
-                    .font(.title2)
-                    .frame(width: 32, height: 32)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(model.currentPack.name)
-                        .font(.headline)
-                    Text(model.visibleStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                Spacer()
-                Toggle("", isOn: Binding(
-                    get: { model.settings.appEnabled },
-                    set: { model.settings.appEnabled = $0 }
-                ))
-                .toggleStyle(.switch)
-                .labelsHidden()
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            MenuHeaderView()
 
-            SliderRow(
-                title: "Volume",
-                value: Binding(
-                    get: { Double(model.settings.masterVolume) },
-                    set: { model.settings.masterVolume = Float($0) }
-                ),
-                range: 0...1
-            )
-
-            Picker("Sound", selection: Binding(
-                get: { model.settings.currentPackId },
-                set: { model.selectPack(model.packs.pack(with: $0)) }
-            )) {
-                ForEach(model.packs.allPacks) { pack in
-                    Text(pack.name)
-                        .tag(pack.id)
-                }
-            }
-
-            HStack(spacing: 8) {
-                IconButton(systemName: "play.fill", title: "Preview") {
-                    model.preview(model.currentPack)
-                }
-                IconButton(systemName: "15.circle", title: "Mute 15 minutes") {
-                    model.settings.mute(for: 15 * 60)
-                }
-                IconButton(systemName: "30.circle", title: "Mute 30 minutes") {
-                    model.settings.mute(for: 30 * 60)
-                }
-                IconButton(systemName: "gearshape", title: "Settings") {
-                    openWindow(id: "main")
-                    NSApp.activate(ignoringOtherApps: true)
-                }
-            }
+            MenuControlPanel()
 
             if model.settings.temporaryMuteUntil != nil {
                 Button {
                     model.settings.clearTemporaryMute()
                 } label: {
-                    Label("Resume Now", systemImage: "speaker.wave.2")
+                    Label("Resume Sounds", systemImage: "speaker.wave.2.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
             }
 
             if model.permissions.state != .approved {
-                InputMonitoringShortcutPanel(compact: true)
+                MenuPermissionCallout()
             }
 
             if let error = model.audio.lastError {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label(error, systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                    Button {
-                        model.restartAudio()
-                    } label: {
-                        Label("Restart Audio", systemImage: "speaker.wave.2")
-                            .frame(maxWidth: .infinity)
-                    }
-                }
+                MenuAudioErrorView(error: error)
             }
 
-            VStack(alignment: .leading, spacing: 6) {
-                Label(model.listenerStatusText, systemImage: model.listenerState.isRunning ? "checkmark.circle" : "exclamationmark.triangle")
-                    .font(.caption)
-                    .foregroundStyle(model.listenerState.isRunning ? Color.secondary : Color.orange)
-                    .lineLimit(2)
-                Label(model.lastKeyboardEventText, systemImage: "keyboard")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                Label(model.lastTypingPlaybackDecisionText, systemImage: "speaker.wave.2")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                Button {
-                    model.restartKeyboardListener()
-                } label: {
-                    Label("Restart Keyboard Listener", systemImage: "arrow.clockwise")
-                        .frame(maxWidth: .infinity)
-                }
-                .font(.caption)
-            }
-
-            Divider()
-
-            HStack {
-                Label(
-                    model.permissions.state == .approved ? "Local input access ready" : model.permissions.state.label,
-                    systemImage: model.permissions.state == .approved ? "checkmark.shield" : "lock.shield"
-                )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Quit") {
-                    NSApp.terminate(nil)
-                }
-                .font(.caption)
-            }
+            MenuFooterView(openWindow: openWindow)
         }
-        .padding(16)
+        .padding(14)
         .onAppear {
             model.refreshPermissionStatus()
         }
+    }
+}
+
+private struct MenuHeaderView: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        HStack(spacing: 11) {
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: model.menuBarSymbol)
+                    .font(.title3)
+                    .frame(width: 38, height: 38)
+                    .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                Circle()
+                    .fill(statusColor)
+                    .frame(width: 9, height: 9)
+                    .overlay(Circle().stroke(Color(nsColor: .windowBackgroundColor), lineWidth: 1.5))
+                    .offset(x: 1, y: 1)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(model.currentPack.name)
+                    .font(.headline)
+                    .lineLimit(1)
+                Text(model.visibleStatus)
+                    .font(.caption)
+                    .foregroundStyle(statusColor)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            Toggle("", isOn: Binding(
+                get: { model.settings.appEnabled },
+                set: { model.settings.appEnabled = $0 }
+            ))
+            .toggleStyle(.switch)
+            .labelsHidden()
+        }
+    }
+
+    private var statusColor: Color {
+        if model.permissions.state != .approved { return .orange }
+        if model.isMutedNow { return .secondary }
+        return .green
+    }
+}
+
+private struct MenuControlPanel: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                Text("Volume")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 50, alignment: .leading)
+                Slider(
+                    value: Binding(
+                        get: { Double(model.settings.masterVolume) },
+                        set: { model.settings.masterVolume = Float($0) }
+                    ),
+                    in: 0...1
+                )
+                Text(model.settings.masterVolume.formatted(.number.precision(.fractionLength(2))))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 36, alignment: .trailing)
+            }
+
+            HStack(spacing: 10) {
+                Text("Sound")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 50, alignment: .leading)
+                Picker("Sound", selection: Binding(
+                    get: { model.settings.currentPackId },
+                    set: { model.selectPack(model.packs.pack(with: $0)) }
+                )) {
+                    ForEach(model.packs.allPacks) { pack in
+                        Text(pack.name).tag(pack.id)
+                    }
+                }
+                .labelsHidden()
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            HStack(spacing: 8) {
+                MenuPopoverIconButton(systemName: "play.fill", title: "Preview") {
+                    model.preview(model.currentPack)
+                }
+                MenuPopoverIconButton(systemName: "15.circle", title: "Mute 15 minutes") {
+                    model.settings.mute(for: 15 * 60)
+                }
+                MenuPopoverIconButton(systemName: "30.circle", title: "Mute 30 minutes") {
+                    model.settings.mute(for: 30 * 60)
+                }
+                Spacer(minLength: 0)
+                MenuPopoverIconButton(systemName: "slider.horizontal.3", title: "Open Mixer") {
+                    model.selectedTab = .mixer
+                    openWindow(id: "main")
+                    NSApp.activate(ignoringOtherApps: true)
+                }
+                MenuPopoverIconButton(systemName: "gearshape", title: "Settings") {
+                    model.selectedTab = .settings
+                    openWindow(id: "main")
+                    NSApp.activate(ignoringOtherApps: true)
+                }
+            }
+        }
+        .padding(11)
+        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct MenuPermissionCallout: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "keyboard.badge.ellipsis")
+                    .font(.headline)
+                    .frame(width: 30, height: 30)
+                    .foregroundStyle(Color.orange)
+                    .background(Color.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 7))
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Keyboard access needed")
+                        .font(.callout.weight(.semibold))
+                    Text("Add Thock Studio in Input Monitoring.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            HStack(spacing: 8) {
+                Button {
+                    model.openSettingsForPermission()
+                } label: {
+                    Label("Open Settings", systemImage: "gearshape")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+
+                MenuPopoverIconButton(systemName: "folder", title: "Show App") {
+                    model.revealAppForPermission()
+                }
+
+                MenuPopoverIconButton(systemName: "arrow.clockwise", title: "Recheck") {
+                    model.refreshPermissionStatus()
+                    model.restartKeyboardListener()
+                }
+            }
+
+            Button {
+                model.selectedTab = .diagnostics
+                openWindow(id: "main")
+                NSApp.activate(ignoringOtherApps: true)
+            } label: {
+                Label("Open Diagnostics", systemImage: "stethoscope")
+                    .font(.caption)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+        }
+        .padding(11)
+        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct MenuAudioErrorView: View {
+    @EnvironmentObject private var model: AppModel
+    let error: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundStyle(Color.red)
+                .frame(width: 24)
+            Text(error)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+            Spacer(minLength: 0)
+            MenuPopoverIconButton(systemName: "speaker.wave.2", title: "Restart Audio") {
+                model.restartAudio()
+            }
+        }
+        .padding(10)
+        .background(Color.red.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+private struct MenuFooterView: View {
+    @EnvironmentObject private var model: AppModel
+    let openWindow: OpenWindowAction
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Label(model.permissions.state == .approved ? "Ready" : model.permissions.state.label, systemImage: footerSymbol)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+
+            Button {
+                model.selectedTab = .diagnostics
+                openWindow(id: "main")
+                NSApp.activate(ignoringOtherApps: true)
+            } label: {
+                Image(systemName: "stethoscope")
+                    .frame(width: 24, height: 22)
+            }
+            .buttonStyle(.borderless)
+            .help("Diagnostics")
+
+            Button("Quit") {
+                NSApp.terminate(nil)
+            }
+            .font(.caption)
+        }
+        .padding(.top, 2)
+    }
+
+    private var footerSymbol: String {
+        model.permissions.state == .approved ? "checkmark.shield" : "lock.shield"
+    }
+}
+
+private struct MenuPopoverIconButton: View {
+    let systemName: String
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .frame(width: 32, height: 28)
+        }
+        .buttonStyle(.bordered)
+        .help(title)
+        .accessibilityLabel(title)
     }
 }
 
@@ -229,28 +378,37 @@ struct OnboardingView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 28) {
-            Spacer(minLength: 12)
-            Image(systemName: onboardingSymbol)
-                .font(.system(size: 54, weight: .semibold))
-                .symbolRenderingMode(.hierarchical)
-                .frame(width: 92, height: 92)
-                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 24) {
+                    Image(systemName: onboardingSymbol)
+                        .font(.system(size: 48, weight: .semibold))
+                        .symbolRenderingMode(.hierarchical)
+                        .frame(width: 80, height: 80)
+                        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
 
-            VStack(spacing: 8) {
-                Text(title)
-                    .font(.system(size: 34, weight: .bold))
-                    .multilineTextAlignment(.center)
-                Text(subtitle)
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 640)
+                    VStack(spacing: 8) {
+                        Text(title)
+                            .font(.system(size: 32, weight: .bold))
+                            .multilineTextAlignment(.center)
+                        Text(subtitle)
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: 640)
+                    }
+
+                    content
+                        .frame(maxWidth: 680)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 32)
+                .padding(.top, 24)
+                .padding(.bottom, 24)
             }
+            .scrollIndicators(.automatic)
 
-            content
-                .frame(maxWidth: 680)
-
+            Divider()
             HStack {
                 if step > 0 {
                     Button("Back") { step -= 1 }
@@ -263,9 +421,11 @@ struct OnboardingView: View {
                 .controlSize(.large)
             }
             .frame(maxWidth: 680)
-            Spacer(minLength: 12)
+            .padding(.horizontal, 32)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity)
+            .background(.bar)
         }
-        .padding(32)
     }
 
     @ViewBuilder private var content: some View {
@@ -350,7 +510,7 @@ struct OnboardingView: View {
     }
 
     private var primaryTitle: String {
-        step == 5 ? "Start Typing" : "Continue"
+        step == 5 ? "Start Typing" : "Next"
     }
 
     private func primaryAction() {
@@ -404,7 +564,7 @@ struct HomeView: View {
 
                 VStack(spacing: 12) {
                     InputMonitoringShortcutPanel()
-                    StatusBanner(symbol: "app.badge", title: model.profileService.activeAppName, message: model.profileService.isActiveAppMuted() ? "Muted by app profile." : "Current app can use keyboard sounds.")
+                    CurrentAppStatusView()
                 }
                 .frame(width: 280)
             }
@@ -1233,43 +1393,116 @@ struct StatusBanner: View {
     }
 }
 
+struct CurrentAppStatusView: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: model.profileService.isActiveAppMuted() ? "speaker.slash" : "app.badge")
+                .font(.callout)
+                .frame(width: 26, height: 26)
+                .foregroundStyle(model.profileService.isActiveAppMuted() ? Color.orange : Color.secondary)
+                .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 6))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(model.profileService.activeAppName)
+                    .font(.callout.weight(.semibold))
+                    .lineLimit(1)
+                Text(model.profileService.isActiveAppMuted() ? "Muted by app profile" : "Using default sound")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+    }
+}
+
 struct InputMonitoringShortcutPanel: View {
     @EnvironmentObject private var model: AppModel
     var compact = false
     var framed = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: model.permissions.state == .approved ? "checkmark.shield" : "keyboard.badge.ellipsis")
-                    .frame(width: 24)
-                    .foregroundStyle(model.permissions.state == .approved ? Color.green : Color.orange)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(model.permissions.state == .approved ? "Input Monitoring is on" : "Input Monitoring is needed")
-                        .font(compact ? .caption.weight(.semibold) : .headline)
-                    Text(model.permissions.state == .approved ? "Typing sounds can work across apps." : "Open Input Monitoring, add Thock Studio with + if it is missing, turn it on, then recheck.")
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 11) {
+                Image(systemName: permissionSymbol)
+                    .font(.headline)
+                    .frame(width: 32, height: 32)
+                    .foregroundStyle(permissionColor)
+                    .background(permissionColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 7))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(permissionTitle)
+                        .font(compact ? .caption.weight(.semibold) : .callout.weight(.semibold))
+                        .lineLimit(1)
+                    Text(permissionMessage)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(compact ? 2 : nil)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                Spacer(minLength: 0)
             }
 
-            if compact {
-                VStack(spacing: 8) {
-                    permissionButtons
+            primaryPermissionButton
+
+            HStack(spacing: 8) {
+                permissionIconButton(
+                    systemName: "keyboard",
+                    title: "Prompt Permission",
+                    help: "Ask macOS to show the Input Monitoring permission prompt."
+                ) {
+                    model.requestPermission()
                 }
-            } else {
-                HStack(spacing: 8) {
-                    permissionButtons
+                permissionIconButton(
+                    systemName: "folder",
+                    title: "Show App",
+                    help: "Reveal the exact app bundle to add with the + button."
+                ) {
+                    model.revealAppForPermission()
+                }
+                permissionIconButton(
+                    systemName: "arrow.clockwise",
+                    title: "Recheck",
+                    help: "Refresh permission status and restart the keyboard listener."
+                ) {
+                    model.refreshPermissionStatus()
+                    model.restartKeyboardListener()
                 }
             }
         }
         .padding(compact || !framed ? 0 : 12)
-        .background(Color.secondary.opacity(compact || !framed ? 0 : 0.08), in: RoundedRectangle(cornerRadius: 8))
+        .background(Color.secondary.opacity(compact || !framed ? 0 : 0.07), in: RoundedRectangle(cornerRadius: 8))
     }
 
-    @ViewBuilder private var permissionButtons: some View {
-        if compact {
+    private var permissionSymbol: String {
+        model.permissions.state == .approved ? "checkmark.shield.fill" : "keyboard.badge.ellipsis"
+    }
+
+    private var permissionColor: Color {
+        model.permissions.state == .approved ? .green : .orange
+    }
+
+    private var permissionTitle: String {
+        model.permissions.state == .approved ? "Input Monitoring on" : "Input Monitoring needed"
+    }
+
+    private var permissionMessage: String {
+        model.permissions.state == .approved
+            ? "Real typing can trigger sounds across apps."
+            : "Add Thock Studio in macOS settings, then recheck."
+    }
+
+    @ViewBuilder private var primaryPermissionButton: some View {
+        if model.permissions.state == .approved {
+            Button {
+                model.openSettingsForPermission()
+            } label: {
+                Label("Open Input Monitoring", systemImage: "gearshape")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+        } else {
             Button {
                 model.openSettingsForPermission()
             } label: {
@@ -1277,39 +1510,22 @@ struct InputMonitoringShortcutPanel: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
-        } else {
-            Button {
-                model.openSettingsForPermission()
-            } label: {
-                Label("Open Input Monitoring", systemImage: "gearshape")
-            }
-            .buttonStyle(.bordered)
         }
+    }
 
-        Button {
-            model.requestPermission()
-        } label: {
-            Label("Prompt Permission", systemImage: "keyboard")
-                .frame(maxWidth: compact ? .infinity : nil)
+    private func permissionIconButton(
+        systemName: String,
+        title: String,
+        help: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .frame(width: 34, height: 28)
         }
         .buttonStyle(.bordered)
-
-        Button {
-            model.revealAppForPermission()
-        } label: {
-            Label("Show App", systemImage: "folder")
-                .frame(maxWidth: compact ? .infinity : nil)
-        }
-        .buttonStyle(.bordered)
-
-        Button {
-            model.refreshPermissionStatus()
-            model.restartKeyboardListener()
-        } label: {
-            Label("Recheck", systemImage: "arrow.clockwise")
-                .frame(maxWidth: compact ? .infinity : nil)
-        }
-        .buttonStyle(.bordered)
+        .help(help)
+        .accessibilityLabel(title)
     }
 }
 

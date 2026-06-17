@@ -5,14 +5,17 @@ import Foundation
 @MainActor
 final class PermissionService: ObservableObject {
     @Published private(set) var state: PermissionState = .notDetermined
+    private var observedKeyboardEvents = false
 
     init() {
         refresh()
     }
 
     func refresh(listenerIsRunning: Bool = false) {
-        if listenerIsRunning || CGPreflightListenEventAccess() {
+        if CGPreflightListenEventAccess() || observedKeyboardEvents {
             state = .approved
+        } else if listenerIsRunning {
+            state = .unknownOrBlocked
         } else if state == .approved {
             state = .unknownOrBlocked
         } else if state != .denied {
@@ -20,8 +23,14 @@ final class PermissionService: ObservableObject {
         }
     }
 
+    func markKeyboardEventObserved() {
+        observedKeyboardEvents = true
+        state = .approved
+    }
+
     func requestAccess() {
         let granted = CGRequestListenEventAccess()
+        observedKeyboardEvents = false
         state = granted ? .approved : .denied
         if !granted {
             openInputMonitoringSettings()
