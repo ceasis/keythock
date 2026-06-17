@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "packId": "com.thockstudio.pack.clicky1.recording",
+  "name": "Clicky-1",
+  "version": "1.0.0",
+  "author": "User Recording",
+  "category": "clicky",
+  "tone": "sharp",
+  "loudness": "loud",
+  "description": "Clicky keypress samples extracted from clicky.mov.",
+  "isPremium": false,
+  "supportsPress": true,
+  "supportsRelease": false,
+  "recommendedVolume": 0.4,
+  "pitchVariationDefault": 0.008,
+  "sampleVariationDefault": true,
+  "samples": {
+    "alpha": {
+      "press": [
+        "samples/alpha/press_01.wav",
+        "samples/alpha/press_02.wav",
+        "samples/alpha/press_03.wav",
+        "samples/alpha/press_04.wav",
+        "samples/alpha/press_05.wav",
+        "samples/alpha/press_06.wav",
+        "samples/alpha/press_07.wav",
+        "samples/alpha/press_08.wav",
+        "samples/alpha/press_09.wav",
+        "samples/alpha/press_10.wav",
+        "samples/alpha/press_11.wav",
+        "samples/alpha/press_12.wav",
+        "samples/alpha/press_13.wav",
+        "samples/alpha/press_14.wav",
+        "samples/alpha/press_15.wav",
+        "samples/alpha/press_16.wav"
+      ]
+    }
+  }
+}
