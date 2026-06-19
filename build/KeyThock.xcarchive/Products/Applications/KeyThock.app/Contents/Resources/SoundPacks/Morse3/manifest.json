@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "packId": "com.keythock.pack.morse3.synth",
+  "name": "Morse-3",
+  "version": "1.0.0",
+  "author": "KeyThock",
+  "category": "morse",
+  "tone": "radio",
+  "loudness": "medium",
+  "description": "Brighter radio-style Morse code beeps. Letter and number keys play their Morse equivalent.",
+  "isPremium": false,
+  "supportsPress": true,
+  "supportsRelease": false,
+  "recommendedVolume": 0.26,
+  "pitchVariationDefault": 0.0,
+  "sampleVariationDefault": false,
+  "samples": {
+    "alpha": {
+      "press": [
+        "samples/alpha/press_01.wav",
+        "samples/alpha/press_02.wav"
+      ]
+    }
+  }
+}

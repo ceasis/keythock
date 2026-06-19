@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "packId": "com.keythock.pack.thocky2.recording",
+  "name": "Thocky-2",
+  "version": "1.0.0",
+  "author": "User Recording",
+  "category": "linear",
+  "tone": "deep",
+  "loudness": "medium",
+  "description": "Thocky keypress samples extracted from thocky.mov.",
+  "isPremium": false,
+  "supportsPress": true,
+  "supportsRelease": false,
+  "recommendedVolume": 0.52,
+  "pitchVariationDefault": 0.012,
+  "sampleVariationDefault": true,
+  "samples": {
+    "alpha": {
+      "press": [
+        "samples/alpha/press_01.wav",
+        "samples/alpha/press_02.wav",
+        "samples/alpha/press_03.wav",
+        "samples/alpha/press_04.wav",
+        "samples/alpha/press_05.wav",
+        "samples/alpha/press_06.wav",
+        "samples/alpha/press_07.wav",
+        "samples/alpha/press_08.wav",
+        "samples/alpha/press_09.wav",
+        "samples/alpha/press_10.wav",
+        "samples/alpha/press_11.wav",
+        "samples/alpha/press_12.wav",
+        "samples/alpha/press_13.wav",
+        "samples/alpha/press_14.wav",
+        "samples/alpha/press_15.wav"
+      ]
+    }
+  }
+}

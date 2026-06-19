@@ -1,0 +1,56 @@
+name: KeyThock
+
+options:
+  minimumXcodeGenVersion: 2.42.0
+  deploymentTarget:
+    macOS: "13.0"
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: TDXJZR8KA3
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    CLANG_ENABLE_MODULES: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+
+targets:
+  KeyThock:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: Sources/KeyThock
+        excludes:
+          - Resources
+      - path: Sources/KeyThock/Resources/SoundPacks
+        buildPhase: resources
+        type: folder
+      - path: Sources/KeyThock/Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+    entitlements:
+      path: Resources/KeyThock.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-only: true
+    settings:
+      base:
+        PRODUCT_NAME: KeyThock
+        PRODUCT_MODULE_NAME: KeyThock
+        PRODUCT_BUNDLE_IDENTIFIER: com.keythock.app
+        INFOPLIST_FILE: Xcode/KeyThock-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Resources/KeyThock.entitlements
+        SKIP_INSTALL: NO
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+      configs:
+        Debug:
+          ENABLE_HARDENED_RUNTIME: NO
+        Release:
+          ENABLE_HARDENED_RUNTIME: YES
+    scheme:
+      testTargets: []
+      gatherCoverageData: false

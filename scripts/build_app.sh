@@ -1,25 +1,25 @@
 #!/bin/zsh
 set -euo pipefail
 
-APP_NAME="Thock Studio"
-BUNDLE_ID="com.thockstudio.app"
+APP_NAME="KeyThock"
+BUNDLE_ID="com.keythock.app"
 VERSION="1.0.0"
 BUILD_NUMBER="1"
 BUILD_DIR=".build"
 APP_DIR="${BUILD_DIR}/${APP_NAME}.app"
-EXECUTABLE="${BUILD_DIR}/release/ThockStudio"
-SIGNING_PROFILE="${THOCK_STUDIO_SIGNING_PROFILE:-local}"
-ENTITLEMENTS="${THOCK_STUDIO_ENTITLEMENTS:-}"
+EXECUTABLE="${BUILD_DIR}/release/KeyThock"
+SIGNING_PROFILE="${KEYTHOCK_SIGNING_PROFILE:-local}"
+ENTITLEMENTS="${KEYTHOCK_ENTITLEMENTS:-}"
 
 if [[ "${SIGNING_PROFILE}" == "appstore" && -z "${ENTITLEMENTS}" ]]; then
-  ENTITLEMENTS="Resources/ThockStudio.entitlements"
+  ENTITLEMENTS="Resources/KeyThock.entitlements"
 fi
 
 # Stable code-signing identity so TCC grants (Input Monitoring) survive rebuilds.
 # Ad-hoc signatures (--sign -) get a new hash every build and silently drop the
-# permission. Override with THOCK_STUDIO_SIGNING_IDENTITY; auto-detects an Apple
+# permission. Override with KEYTHOCK_SIGNING_IDENTITY; auto-detects an Apple
 # Development cert; falls back to ad-hoc only if no identity is available.
-SIGNING_IDENTITY="${THOCK_STUDIO_SIGNING_IDENTITY:-}"
+SIGNING_IDENTITY="${KEYTHOCK_SIGNING_IDENTITY:-}"
 if [[ -z "${SIGNING_IDENTITY}" ]]; then
   SIGNING_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | awk '/Apple Development/ {print $2; exit}')"
 fi
@@ -33,8 +33,8 @@ cp "${EXECUTABLE}" "${APP_DIR}/Contents/MacOS/${APP_NAME}"
 if [[ -f "Resources/AppIcon.icns" ]]; then
   cp "Resources/AppIcon.icns" "${APP_DIR}/Contents/Resources/AppIcon.icns"
 fi
-if [[ -d "Sources/ThockStudio/Resources" ]]; then
-  ditto "Sources/ThockStudio/Resources" "${APP_DIR}/Contents/Resources"
+if [[ -d "Sources/KeyThock/Resources" ]]; then
+  ditto "Sources/KeyThock/Resources" "${APP_DIR}/Contents/Resources"
 fi
 
 cat > "${APP_DIR}/Contents/Info.plist" <<PLIST
@@ -69,9 +69,9 @@ cat > "${APP_DIR}/Contents/Info.plist" <<PLIST
   <key>NSHighResolutionCapable</key>
   <true/>
   <key>NSInputMonitoringUsageDescription</key>
-  <string>Thock Studio needs Input Monitoring to detect key presses locally and play keyboard sounds. It never stores typed text.</string>
+  <string>KeyThock needs Input Monitoring to detect key presses locally and play keyboard sounds. It never stores typed text.</string>
   <key>NSHumanReadableCopyright</key>
-  <string>Copyright Thock Studio</string>
+  <string>Copyright KeyThock</string>
 </dict>
 </plist>
 PLIST

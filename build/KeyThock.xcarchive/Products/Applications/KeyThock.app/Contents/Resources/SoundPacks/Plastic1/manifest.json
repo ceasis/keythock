@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "packId": "com.keythock.pack.plastic1.recording",
+  "name": "Plastic-1",
+  "version": "1.0.0",
+  "author": "User Recording",
+  "category": "clicky",
+  "tone": "bright",
+  "loudness": "medium",
+  "description": "Plastic keypress samples extracted from Plastic.mov.",
+  "isPremium": false,
+  "supportsPress": true,
+  "supportsRelease": false,
+  "recommendedVolume": 0.42,
+  "pitchVariationDefault": 0.008,
+  "sampleVariationDefault": true,
+  "samples": {
+    "alpha": {
+      "press": [
+        "samples/alpha/press_01.wav",
+        "samples/alpha/press_02.wav",
+        "samples/alpha/press_03.wav",
+        "samples/alpha/press_04.wav",
+        "samples/alpha/press_05.wav",
+        "samples/alpha/press_06.wav",
+        "samples/alpha/press_07.wav",
+        "samples/alpha/press_08.wav",
+        "samples/alpha/press_09.wav",
+        "samples/alpha/press_10.wav",
+        "samples/alpha/press_11.wav",
+        "samples/alpha/press_12.wav"
+      ]
+    }
+  }
+}

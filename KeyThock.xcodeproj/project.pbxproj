@@ -1,0 +1,401 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		090BDEC9CDA7AA0B287647B1 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953FC0750920FD6C51748A57 /* Views.swift */; };
+		1BFE09D7187A884159D10915 /* SoundPackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23DBAD711700D7197B1386E6 /* SoundPackManager.swift */; };
+		22D8D1DF63A2E27F02101CA5 /* KeySoundsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B9A03AAD140CBAC50DCF05D /* KeySoundsView.swift */; };
+		24ADBE9F2376A549F4898A2D /* SoundPacks in Resources */ = {isa = PBXBuildFile; fileRef = EB07F857DB6E35633EA62DC7 /* SoundPacks */; };
+		2F939ABADA57A1E2EA02988C /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 0D09A7FC898A194CE5B09FF4 /* PrivacyInfo.xcprivacy */; };
+		3E9DF5622F6F65DBF9C33A3E /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335A9455FEDF1FA445F39A25 /* SettingsStore.swift */; };
+		427E084CE577973016AD51CB /* DebugLogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6AB6AB2422D1C8207E5A233 /* DebugLogService.swift */; };
+		570A0419625E78760CA42369 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6360E60CDC5AFC3DB2462DDC /* Models.swift */; };
+		602F1A0CEAFFCFC87293B2AB /* AudioEngineService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE381E61B01574D12D9A81AF /* AudioEngineService.swift */; };
+		656FFA8EA77FAD4D254491B7 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7200AEAE075AD54301ADF57B /* PermissionService.swift */; };
+		7816194A268EDADABDDC0344 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C13B3C27524F565F9FDE3AC /* AppModel.swift */; };
+		82A780FC978660306B0886CE /* KeyboardEventService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19DCAEB17C7EDEFE817A51A9 /* KeyboardEventService.swift */; };
+		9D34223C6BC5DEC7630DF74B /* HotkeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FEBA62ADC75C60F72EBE732 /* HotkeyService.swift */; };
+		AAD1748EA5E7B281E5240A85 /* KeyThockApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925EAB83A1284313E96D4913 /* KeyThockApp.swift */; };
+		B01EB0AB436D74F48AE2E71C /* SystemAudioActivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCE7C536F9CD7FB1F549D61 /* SystemAudioActivityService.swift */; };
+		C18162DFB2141D13907F27E8 /* KeyClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0495451658D80C813224F5B9 /* KeyClassifier.swift */; };
+		D0D519FB3EE8ECFF1EE19F58 /* ProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F33B0DEB12B52BA8B233301B /* ProfileService.swift */; };
+		EE1D30D932D15E8E1870DA3A /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 102CBA459B168BFFE23F8F5E /* AppIcon.icns */; };
+		FB4BC711D5722D1607455689 /* MorseCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA09A8F7D7DADFBCF2DFCFD8 /* MorseCode.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0495451658D80C813224F5B9 /* KeyClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyClassifier.swift; sourceTree = "<group>"; };
+		0D09A7FC898A194CE5B09FF4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		102CBA459B168BFFE23F8F5E /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		19DCAEB17C7EDEFE817A51A9 /* KeyboardEventService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEventService.swift; sourceTree = "<group>"; };
+		23DBAD711700D7197B1386E6 /* SoundPackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundPackManager.swift; sourceTree = "<group>"; };
+		2FEBA62ADC75C60F72EBE732 /* HotkeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyService.swift; sourceTree = "<group>"; };
+		335A9455FEDF1FA445F39A25 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		3C13B3C27524F565F9FDE3AC /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		4CCE7C536F9CD7FB1F549D61 /* SystemAudioActivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioActivityService.swift; sourceTree = "<group>"; };
+		6360E60CDC5AFC3DB2462DDC /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		66F097A3EE9B11BBA4058E46 /* KeyThock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KeyThock.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7200AEAE075AD54301ADF57B /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionService.swift; sourceTree = "<group>"; };
+		7B9A03AAD140CBAC50DCF05D /* KeySoundsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeySoundsView.swift; sourceTree = "<group>"; };
+		925EAB83A1284313E96D4913 /* KeyThockApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyThockApp.swift; sourceTree = "<group>"; };
+		953FC0750920FD6C51748A57 /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
+		CA09A8F7D7DADFBCF2DFCFD8 /* MorseCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorseCode.swift; sourceTree = "<group>"; };
+		CE381E61B01574D12D9A81AF /* AudioEngineService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngineService.swift; sourceTree = "<group>"; };
+		EB07F857DB6E35633EA62DC7 /* SoundPacks */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SoundPacks; path = Sources/KeyThock/Resources/SoundPacks; sourceTree = SOURCE_ROOT; };
+		F33B0DEB12B52BA8B233301B /* ProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileService.swift; sourceTree = "<group>"; };
+		F6AB6AB2422D1C8207E5A233 /* DebugLogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogService.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2A38AF1065BC5F779C5B2179 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				66F097A3EE9B11BBA4058E46 /* KeyThock.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		762CF8AB5C84F203104549E7 /* KeyThock */ = {
+			isa = PBXGroup;
+			children = (
+				3C13B3C27524F565F9FDE3AC /* AppModel.swift */,
+				CE381E61B01574D12D9A81AF /* AudioEngineService.swift */,
+				F6AB6AB2422D1C8207E5A233 /* DebugLogService.swift */,
+				2FEBA62ADC75C60F72EBE732 /* HotkeyService.swift */,
+				19DCAEB17C7EDEFE817A51A9 /* KeyboardEventService.swift */,
+				0495451658D80C813224F5B9 /* KeyClassifier.swift */,
+				7B9A03AAD140CBAC50DCF05D /* KeySoundsView.swift */,
+				925EAB83A1284313E96D4913 /* KeyThockApp.swift */,
+				6360E60CDC5AFC3DB2462DDC /* Models.swift */,
+				CA09A8F7D7DADFBCF2DFCFD8 /* MorseCode.swift */,
+				7200AEAE075AD54301ADF57B /* PermissionService.swift */,
+				F33B0DEB12B52BA8B233301B /* ProfileService.swift */,
+				335A9455FEDF1FA445F39A25 /* SettingsStore.swift */,
+				23DBAD711700D7197B1386E6 /* SoundPackManager.swift */,
+				4CCE7C536F9CD7FB1F549D61 /* SystemAudioActivityService.swift */,
+				953FC0750920FD6C51748A57 /* Views.swift */,
+			);
+			name = KeyThock;
+			path = Sources/KeyThock;
+			sourceTree = "<group>";
+		};
+		B1699789A8EDFA9D0C313B2D /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0D09A7FC898A194CE5B09FF4 /* PrivacyInfo.xcprivacy */,
+			);
+			name = Resources;
+			path = Sources/KeyThock/Resources;
+			sourceTree = "<group>";
+		};
+		C60077FBC59B3501CECA1B64 = {
+			isa = PBXGroup;
+			children = (
+				EB07F857DB6E35633EA62DC7 /* SoundPacks */,
+				762CF8AB5C84F203104549E7 /* KeyThock */,
+				E22B12DBAFBDCF9CCA964708 /* Resources */,
+				B1699789A8EDFA9D0C313B2D /* Resources */,
+				2A38AF1065BC5F779C5B2179 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E22B12DBAFBDCF9CCA964708 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				102CBA459B168BFFE23F8F5E /* AppIcon.icns */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E6AF4D943C261E140B01F0DB /* KeyThock */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E17532B478FDA88E4B25642F /* Build configuration list for PBXNativeTarget "KeyThock" */;
+			buildPhases = (
+				DA731A6EFB75A50F7C67E032 /* Sources */,
+				FD60BB48E55E5DA7C51DF8CA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KeyThock;
+			packageProductDependencies = (
+			);
+			productName = KeyThock;
+			productReference = 66F097A3EE9B11BBA4058E46 /* KeyThock.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F6C47A4C83011A032736C6EF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					E6AF4D943C261E140B01F0DB = {
+						DevelopmentTeam = TDXJZR8KA3;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 12BD684570E47924F7B16713 /* Build configuration list for PBXProject "KeyThock" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = C60077FBC59B3501CECA1B64;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 2A38AF1065BC5F779C5B2179 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E6AF4D943C261E140B01F0DB /* KeyThock */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FD60BB48E55E5DA7C51DF8CA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EE1D30D932D15E8E1870DA3A /* AppIcon.icns in Resources */,
+				2F939ABADA57A1E2EA02988C /* PrivacyInfo.xcprivacy in Resources */,
+				24ADBE9F2376A549F4898A2D /* SoundPacks in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		DA731A6EFB75A50F7C67E032 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7816194A268EDADABDDC0344 /* AppModel.swift in Sources */,
+				602F1A0CEAFFCFC87293B2AB /* AudioEngineService.swift in Sources */,
+				427E084CE577973016AD51CB /* DebugLogService.swift in Sources */,
+				9D34223C6BC5DEC7630DF74B /* HotkeyService.swift in Sources */,
+				C18162DFB2141D13907F27E8 /* KeyClassifier.swift in Sources */,
+				22D8D1DF63A2E27F02101CA5 /* KeySoundsView.swift in Sources */,
+				AAD1748EA5E7B281E5240A85 /* KeyThockApp.swift in Sources */,
+				82A780FC978660306B0886CE /* KeyboardEventService.swift in Sources */,
+				570A0419625E78760CA42369 /* Models.swift in Sources */,
+				FB4BC711D5722D1607455689 /* MorseCode.swift in Sources */,
+				656FFA8EA77FAD4D254491B7 /* PermissionService.swift in Sources */,
+				D0D519FB3EE8ECFF1EE19F58 /* ProfileService.swift in Sources */,
+				3E9DF5622F6F65DBF9C33A3E /* SettingsStore.swift in Sources */,
+				1BFE09D7187A884159D10915 /* SoundPackManager.swift in Sources */,
+				B01EB0AB436D74F48AE2E71C /* SystemAudioActivityService.swift in Sources */,
+				090BDEC9CDA7AA0B287647B1 /* Views.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3E4F53F73D4EBCA70733EB8B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/KeyThock.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = "Xcode/KeyThock-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.keythock.app;
+				PRODUCT_MODULE_NAME = KeyThock;
+				PRODUCT_NAME = KeyThock;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+			};
+			name = Debug;
+		};
+		54688BC9D89228DD813E8F1D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = TDXJZR8KA3;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		EF48C2BEAFD50797E700D035 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Resources/KeyThock.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = "Xcode/KeyThock-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.keythock.app;
+				PRODUCT_MODULE_NAME = KeyThock;
+				PRODUCT_NAME = KeyThock;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+			};
+			name = Release;
+		};
+		FD3B35DE6D9C34EA0CFC67D2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = TDXJZR8KA3;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		12BD684570E47924F7B16713 /* Build configuration list for PBXProject "KeyThock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				54688BC9D89228DD813E8F1D /* Debug */,
+				FD3B35DE6D9C34EA0CFC67D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E17532B478FDA88E4B25642F /* Build configuration list for PBXNativeTarget "KeyThock" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E4F53F73D4EBCA70733EB8B /* Debug */,
+				EF48C2BEAFD50797E700D035 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F6C47A4C83011A032736C6EF /* Project object */;
+}

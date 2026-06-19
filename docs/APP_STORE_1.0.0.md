@@ -1,14 +1,14 @@
-# Thock Studio 1.0.0 App Store Connect Draft
+# KeyThock 1.0.0 App Store Connect Draft
 
 ## App Information
 
-Name: Thock Studio
+Name: KeyThock
 
 Subtitle: Keyboard sounds for Mac
 
-Bundle ID: `com.thockstudio.app`
+Bundle ID: `com.keythock.app`
 
-SKU: `thock-studio-mac-001`
+SKU: `keythock-mac-001`
 
 Primary Language: English (U.S.)
 
@@ -34,11 +34,11 @@ Version: `1.0.0`
 
 Build: `1`
 
-Copyright: Copyright Thock Studio
+Copyright: Copyright KeyThock
 
 What's New:
 
-Initial release of Thock Studio for Mac.
+Initial release of KeyThock for Mac.
 
 ## Promotional Text
 
@@ -46,11 +46,11 @@ Make your Mac keyboard sound creamy, clacky, thocky, bubbly, or fully custom wit
 
 ## Description
 
-Thock Studio adds satisfying mechanical keyboard sounds to your Mac.
+KeyThock adds satisfying mechanical keyboard sounds to your Mac.
 
 Choose from recorded keyboard sound packs, tune the feel with a simple mixer, and assign individual samples to specific keys. Want Space to sound deeper than A, or Enter to hit differently from the rest of the board? Open the Keys editor, click a key, and cycle through the samples in the active pack until it feels right.
 
-Everything runs locally on your Mac. Thock Studio uses macOS Input Monitoring only to detect key press timing and key category for sound playback. It does not store what you type, reconstruct words, send keystrokes to a server, read your clipboard, or take screenshots.
+Everything runs locally on your Mac. KeyThock uses macOS Input Monitoring only to detect key press timing and key category for sound playback. It does not store what you type, reconstruct words, send keystrokes to a server, read your clipboard, or take screenshots.
 
 Features:
 - Recorded sound packs including creamy, clacky, thocky, bubble, normal, plastic, marbly, clicky, and poppy tones
@@ -62,7 +62,7 @@ Features:
 - Menu bar controls for quick preview, muting, and sound switching
 - Custom sound pack import using local `.thockpack`, `.zip`, or folder packs
 
-Thock Studio is for people who want their keyboard to feel more personal, cozy, and fun without changing hardware.
+KeyThock is for people who want their keyboard to feel more personal, cozy, and fun without changing hardware.
 
 ## Keywords
 
@@ -70,7 +70,7 @@ keyboard,mechanical,typing,sound,thock,clacky,creamy,mac,menu bar,asmr
 
 ## App Review Notes
 
-Thock Studio is a local keyboard sound utility for macOS.
+KeyThock is a local keyboard sound utility for macOS.
 
 The app requests Input Monitoring because it needs to detect keyboard events while the user types in other apps, then immediately play a local keypress sound. The app uses the event key code and event phase only for local sound selection.
 
@@ -85,7 +85,7 @@ Privacy-specific behavior:
 - Imported sound packs are copied locally into the app's Application Support folder.
 
 Suggested review flow:
-1. Launch Thock Studio.
+1. Launch KeyThock.
 2. Grant Input Monitoring permission when prompted, or open System Settings from the app.
 3. Choose a sound pack from the menu bar or Sound Packs tab.
 4. Use the Test Typing Pad or type in another app to hear local keyboard sounds.
@@ -114,7 +114,7 @@ Notes for App Store Connect privacy questionnaire:
 
 ## Privacy Manifest
 
-Bundled file: `Sources/ThockStudio/Resources/PrivacyInfo.xcprivacy`
+Bundled file: `Sources/KeyThock/Resources/PrivacyInfo.xcprivacy`
 
 Declared tracking: false.
 
@@ -128,7 +128,7 @@ Required reason API:
 
 Input Monitoring usage description:
 
-Thock Studio needs Input Monitoring to detect key presses locally and play keyboard sounds. It never stores typed text.
+KeyThock needs Input Monitoring to detect key presses locally and play keyboard sounds. It never stores typed text.
 
 Sandbox entitlements:
 - `com.apple.security.app-sandbox`
@@ -140,7 +140,7 @@ The file access entitlement is used only when the user explicitly imports a loca
 
 Build note:
 
-Local QA builds are intentionally signed without App Sandbox entitlements because global keyboard monitoring depends on macOS Input Monitoring. Use `THOCK_STUDIO_SIGNING_PROFILE=appstore ./scripts/build_app.sh` only when producing a sandboxed App Store validation build.
+Local QA builds are intentionally signed without App Sandbox entitlements because global keyboard monitoring depends on macOS Input Monitoring. Use `KEYTHOCK_SIGNING_PROFILE=appstore ./scripts/build_app.sh` only when producing a sandboxed App Store validation build.
 
 ## Screenshots
 
@@ -161,11 +161,12 @@ Landscape macOS video showing sound pack preview, key assignment, and typing wit
 
 - Publish privacy policy URL.
 - Publish support URL.
-- Create App Store Connect app record with Bundle ID `com.thockstudio.app`.
+- Create App Store Connect app record with Bundle ID `com.keythock.app`.
 - Confirm primary category Utilities matches `LSApplicationCategoryType`.
 - Upload at least one macOS screenshot.
 - Verify App Sandbox information if App Store Connect asks for entitlement details.
-- Archive with a Mac App Store distribution certificate/provisioning profile.
+- Archive from `KeyThock.xcodeproj` with the `KeyThock` scheme and a Mac App Store distribution certificate/provisioning profile.
+- Do not archive from the Swift Package view; that creates a generic archive and Organizer will not show the App Store distribution option.
 - Test permission flow on a clean macOS user account before submission.
 - Confirm Input Monitoring review note is included.
 - Confirm app privacy answers say no tracking and no data collected.

@@ -1,4 +1,4 @@
-# Thock Studio Sound Pack Format
+# KeyThock Sound Pack Format
 
 A `.thockpack` is a folder or zipped folder with this structure:
 
@@ -59,4 +59,4 @@ Validation rules:
 - At least one `alpha.press` sample must be present.
 - Sample paths must stay inside the pack folder.
 - Supported audio formats are WAV, AIFF, CAF, and M4A when AVFoundation can decode them.
-- Imported packs are copied into `~/Library/Application Support/Thock Studio/ImportedPacks/`.
+- Imported packs are copied into `~/Library/Application Support/KeyThock/ImportedPacks/`.

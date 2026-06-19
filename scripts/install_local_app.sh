@@ -1,8 +1,8 @@
 #!/bin/zsh
 set -euo pipefail
 
-APP_NAME="Thock Studio"
-BUNDLE_ID="com.thockstudio.app"
+APP_NAME="KeyThock"
+BUNDLE_ID="com.keythock.app"
 SOURCE_APP=".build/${APP_NAME}.app"
 INSTALL_DIR="${HOME}/Applications"
 DEST_APP="${INSTALL_DIR}/${APP_NAME}.app"

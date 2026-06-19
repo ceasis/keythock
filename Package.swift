@@ -3,19 +3,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "ThockStudio",
+    name: "KeyThock",
     platforms: [
         .macOS(.v13)
     ],
     products: [
-        .executable(name: "ThockStudio", targets: ["ThockStudio"])
+        .executable(name: "KeyThock", targets: ["KeyThock"])
     ],
     targets: [
         .executableTarget(
-            name: "ThockStudio",
-            path: "Sources/ThockStudio",
+            name: "KeyThock",
+            path: "Sources/KeyThock",
             resources: [
                 .copy("Resources")
+            ],
+            linkerSettings: [
+                .linkedFramework("AppKit"),
+                .linkedFramework("ApplicationServices"),
+                .linkedFramework("Carbon"),
+                .linkedFramework("ServiceManagement")
             ]
         )
     ]

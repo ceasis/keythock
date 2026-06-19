@@ -5,20 +5,20 @@
       "request": "launch",
       "args": [],
       "cwd": "${workspaceFolder:keythock}",
-      "name": "Debug ThockStudio",
-      "target": "ThockStudio",
+      "name": "Debug KeyThock",
+      "target": "KeyThock",
       "configuration": "debug",
-      "preLaunchTask": "swift: Build Debug ThockStudio"
+      "preLaunchTask": "swift: Build Debug KeyThock"
     },
     {
       "type": "swift",
       "request": "launch",
       "args": [],
       "cwd": "${workspaceFolder:keythock}",
-      "name": "Release ThockStudio",
-      "target": "ThockStudio",
+      "name": "Release KeyThock",
+      "target": "KeyThock",
       "configuration": "release",
-      "preLaunchTask": "swift: Build Release ThockStudio"
+      "preLaunchTask": "swift: Build Release KeyThock"
     }
   ]
 }
