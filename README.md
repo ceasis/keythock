@@ -4,9 +4,7 @@
 
 # KeyThock
 
-KeyThock is a native macOS menu bar app that makes any keyboard sound and feel more satisfying. It plays recorded keyboard samples as you type, with sound packs for creamy, clacky, thocky, bubble, normal, plastic, marbly, poppy, and clicky keyboard tones.
-
-It is built for people who spend all day typing: developers, writers, students, note-takers, desk setup people, and anyone who wants their Mac keyboard to feel a little more alive.
+KeyThock is a native macOS menu bar app that makes any keyboard sound and feel more satisfying. It plays recorded keyboard samples as you type in normal Mac apps, with sound packs for creamy, clacky, thocky, bubble, normal, plastic, marbly, poppy, and clicky keyboard tones.
 
 Everything runs locally on the Mac. KeyThock does not store what you type, reconstruct words, read the clipboard, take screenshots, or send keystrokes anywhere.
 
@@ -16,10 +14,11 @@ Everything runs locally on the Mac. KeyThock does not store what you type, recon
 - Runs from a compact menu bar popover.
 - Lets you switch sound packs instantly.
 - Includes volume, preview, mute timers, and quick diagnostics.
-- Provides a full settings window for sound packs, mixer, per-key sounds, app profiles, diagnostics, privacy, and general settings.
+- Provides a full settings window for sound packs, mixer, per-key sounds, sound recipes, focus timers, diagnostics, privacy, and general settings.
 - Lets you tune sound with mixer presets, pitch, brightness, bass, room amount, repeat behavior, and key-category levels.
 - Lets you assign specific samples to individual keys using a full keyboard layout.
-- Supports optional per-app profiles for muting or changing sound packs in specific apps.
+- Lets you use per-app sound recipes, such as creamy writing apps, clicky code editors, and muted call apps.
+- Includes a Pomodoro timer and a private typed-character countdown.
 - Imports custom `.thockpack`, `.zip`, or folder-based sound packs.
 
 ## Current Sound Packs
@@ -30,9 +29,7 @@ Built-in packs are generated from user-provided recordings and live in `Sources/
 | --- | --- |
 | `Creamy-1` | Original creamy keyboard recording |
 | `Creamy-2` | Creamy section from the Creamy/Clacky/Thocky recording |
-| `Creamy-3` | Additional creamy keyboard recording |
 | `Clacky-1` | Clacky section from the Creamy/Clacky/Thocky recording |
-| `Clacky-2` | Additional clacky recording |
 | `Clicky-1` | Clicky switch recording |
 | `Thocky-1` | Thocky section from the Creamy/Clacky/Thocky recording |
 | `Thocky-2` | Additional thocky recording |
@@ -46,7 +43,7 @@ Built-in packs are generated from user-provided recordings and live in `Sources/
 
 - macOS 13 or later
 - Swift 5.9 or later
-- Input Monitoring permission for real typing sounds outside KeyThock
+- Input Monitoring permission for typing sounds outside KeyThock
 
 ## Quick Start
 
@@ -64,44 +61,10 @@ This builds KeyThock, installs it to:
 
 and launches that installed copy.
 
-Use the installed copy when granting macOS permissions. Input Monitoring is tied to the app bundle identity and location, so running from `.build` and running from `~/Applications` can produce different permission behavior.
-
 You can also run directly from SwiftPM:
 
 ```sh
 swift run KeyThock
-```
-
-That is useful for development, but less reliable for permission QA.
-
-## Input Monitoring Setup
-
-KeyThock needs macOS Input Monitoring permission so it can observe key press events while you type in other apps. It uses those events only to choose and play local audio samples.
-
-To enable typing sounds:
-
-1. Launch `~/Applications/KeyThock.app`.
-2. Open the KeyThock menu bar popover.
-3. Click `Open Settings` in the keyboard access callout.
-4. In System Settings, open `Privacy & Security` > `Input Monitoring`.
-5. Enable `KeyThock.app`.
-6. If KeyThock is missing, click `+` and add `~/Applications/KeyThock.app`.
-7. Return to KeyThock and click `Recheck`, or quit and reopen the app.
-
-If preview sounds work but real typing is silent, open `Diagnostics`. The most important fields are:
-
-| Diagnostic | Meaning |
-| --- | --- |
-| `Audio` | Whether AVAudioEngine is running |
-| `Input Monitoring` | Whether macOS permission appears available |
-| `Keyboard Listener` | Whether keyboard event taps are active |
-| `Last key event` | Whether KeyThock is receiving real keyboard events |
-| `Last playback decision` | Why the app played or skipped the latest key |
-
-Debug logs are written to:
-
-```text
-~/Library/Logs/KeyThock/debug.log
 ```
 
 ## Using The App
@@ -116,7 +79,6 @@ The menu bar popover is for daily use:
 - Preview the current pack.
 - Mute for 30 minutes.
 - Open Mixer, Settings, or Diagnostics.
-- Fix Input Monitoring if keyboard access is blocked.
 
 ### Sound Packs
 
@@ -138,13 +100,23 @@ Shape the active pack with presets and detailed controls:
 
 Assign a specific sample to each key. Click a key to cycle through samples in the current sound pack. The selected sample becomes the sound used for that key while typing.
 
-### App Profiles
+### Sound Recipes
 
-Create optional per-app rules. For example, mute KeyThock in a meeting app or use a different sound pack in a writing app.
+Create per-app recipes for how KeyThock should behave in specific apps. Suggested recipes can make writing apps creamy, code editors clicky, and call apps muted.
+
+### Focus
+
+Use the Focus tab for Pomodoro sessions and a typed-character countdown. The countdown stores only the remaining count, not the characters you typed.
 
 ### Diagnostics
 
-Use Diagnostics when something feels wrong. It separates audio output, permission state, keyboard listener state, and playback decisions so issues are easier to isolate.
+Use Diagnostics when something feels wrong. It separates audio output, Input Monitoring state, keyboard listener state, and playback decisions so issues are easier to isolate.
+
+Diagnostic lifecycle logs, without raw key identities, are written to:
+
+```text
+~/Library/Logs/KeyThock/debug.log
+```
 
 ## Custom Sound Packs
 
@@ -154,21 +126,21 @@ Minimum structure:
 
 ```text
 MyPack.thockpack
-├── manifest.json
-├── artwork.png
-├── preview.wav
-└── samples
-    ├── alpha
-    │   ├── press_01.wav
-    │   └── release_01.wav
-    ├── space
-    ├── enter
-    ├── backspace
-    ├── tab
-    ├── escape
-    ├── arrow
-    ├── modifier
-    └── function
+|-- manifest.json
+|-- artwork.png
+|-- preview.wav
+`-- samples
+    |-- alpha
+    |   |-- press_01.wav
+    |   `-- release_01.wav
+    |-- space
+    |-- enter
+    |-- backspace
+    |-- tab
+    |-- escape
+    |-- arrow
+    |-- modifier
+    `-- function
 ```
 
 At least one `alpha.press` sample is required. WAV, AIFF, CAF, and M4A files are supported when AVFoundation can decode them.
@@ -181,12 +153,11 @@ See [docs/THOCKPACK.md](docs/THOCKPACK.md) for the full manifest format.
 | --- | --- |
 | `Sources/KeyThock/AppModel.swift` | Main app state and playback decision pipeline |
 | `Sources/KeyThock/AudioEngineService.swift` | AVAudioEngine setup, sample loading, playback, preview sequences |
-| `Sources/KeyThock/KeyboardEventService.swift` | Global keyboard event monitoring and fallback taps |
+| `Sources/KeyThock/KeyboardEventService.swift` | Global keyboard event monitoring and fallback monitor |
 | `Sources/KeyThock/PermissionService.swift` | Input Monitoring permission checks and settings shortcuts |
 | `Sources/KeyThock/SoundPackManager.swift` | Built-in and imported sound pack management |
 | `Sources/KeyThock/SettingsStore.swift` | UserDefaults-backed settings persistence |
-| `Sources/KeyThock/ProfileService.swift` | Optional per-app sound rules |
-| `Sources/KeyThock/HotkeyService.swift` | Global mute/unmute shortcut |
+| `Sources/KeyThock/ProfileService.swift` | Per-app sound recipe rules |
 | `Sources/KeyThock/Views.swift` | Main SwiftUI interface |
 | `Sources/KeyThock/KeySoundsView.swift` | Per-key assignment interface |
 | `Sources/KeyThock/Resources` | Bundled sound packs and privacy manifest |
@@ -211,10 +182,10 @@ Install and launch the local QA app:
 ./scripts/install_local_app.sh
 ```
 
-Reset KeyThock's Input Monitoring state for clean QA:
+Generate App Store screenshots:
 
 ```sh
-./scripts/reset_input_monitoring_for_qa.sh
+python3 scripts/generate_appstore_screenshots.py
 ```
 
 ## App Store Archive
@@ -241,13 +212,11 @@ xcodebuild -project KeyThock.xcodeproj \
 
 ## Signing Modes
 
-Local builds are intentionally signed without App Sandbox entitlements:
+Local builds use the default local signing profile:
 
 ```sh
 ./scripts/build_app.sh
 ```
-
-This is the expected mode for local QA because global keyboard monitoring depends on macOS Input Monitoring and is sensitive to sandboxing.
 
 To create a sandboxed App Store validation build:
 
@@ -261,8 +230,6 @@ Verify entitlements:
 codesign -d --entitlements :- "$HOME/Applications/KeyThock.app"
 ```
 
-For local QA, empty entitlement output is expected.
-
 ## Privacy Model
 
 KeyThock is designed as a local Mac utility.
@@ -270,6 +237,7 @@ KeyThock is designed as a local Mac utility.
 It does not:
 
 - Store typed text
+- Log raw key events or live key identities
 - Reconstruct words or sentences
 - Read clipboard contents
 - Capture screenshots
@@ -283,7 +251,8 @@ It does store local preferences, including:
 - Volume and mixer settings
 - Mute settings
 - Per-key sample assignments
-- Optional app profiles
+- Optional app preference rules
+- Pomodoro and character countdown settings
 - Imported sound pack files
 
 See [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md) for the privacy policy draft.
@@ -299,16 +268,6 @@ See [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md) for the privacy policy draf
 5. Check `Last key event` and `Last playback decision`.
 
 If `Last key event` updates, the app is receiving keyboard events. If `Last playback decision` says a sound was skipped, it will also say why.
-
-### Input Monitoring says enabled, but KeyThock says blocked
-
-macOS permission state can lag behind the actual event stream after rebuilding or re-signing. Quit and reopen KeyThock, then type in another app and check Diagnostics. KeyThock trusts observed keyboard events when macOS delivers them.
-
-If the issue persists, remove KeyThock from Input Monitoring, add `~/Applications/KeyThock.app` again, enable it, and restart the app.
-
-### KeyThock is missing from Input Monitoring
-
-Use `Show App` in KeyThock, then add that exact app bundle with the `+` button in System Settings.
 
 ### Sounds are doubled or too busy
 
@@ -333,7 +292,7 @@ Useful documents:
 - [docs/APP_STORE_1.0.0.md](docs/APP_STORE_1.0.0.md)
 - [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md)
 
-App Store distribution needs special care because Input Monitoring and App Sandbox are sensitive macOS review areas. The local build path is currently the most reliable path for keyboard monitoring QA.
+App Store distribution needs special care because Input Monitoring is a sensitive macOS review area. The review notes explain why the permission is required for system-wide keyboard sounds.
 
 ## License
 

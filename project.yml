@@ -52,5 +52,19 @@ targets:
         Release:
           ENABLE_HARDENED_RUNTIME: YES
     scheme:
-      testTargets: []
+      testTargets:
+        - KeyThockTests
       gatherCoverageData: false
+
+  KeyThockTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - path: Tests/KeyThockTests
+    dependencies:
+      - target: KeyThock
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.keythock.app.tests
+        SWIFT_VERSION: "5.0"

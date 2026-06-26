@@ -6,6 +6,7 @@ final class SoundPackManager: ObservableObject {
     @Published private(set) var customPacks: [SoundPack] = []
     @Published private(set) var favorites: Set<String> = []
     @Published var importMessage: String?
+    @Published var importReport: SoundPackImportReport?
 
     private let favoritesKey = "soundpack.favorites.v1"
     private let importedDirectory: URL
@@ -77,6 +78,7 @@ final class SoundPackManager: ObservableObject {
         )
         customPacks.append(pack)
         importMessage = "Imported \(pack.name)"
+        importReport = Self.report(for: pack)
         return pack
     }
 
@@ -188,6 +190,41 @@ final class SoundPackManager: ObservableObject {
         }
     }
 
+    private static func report(for pack: SoundPack) -> SoundPackImportReport {
+        var pressSampleCount = 0
+        var releaseSampleCount = 0
+        var categories: [String] = []
+        var missingReleaseCategories: [String] = []
+
+        for (category, sampleSet) in pack.source.manifest.samples {
+            let pressCount = sampleSet.press?.count ?? 0
+            let releaseCount = sampleSet.release?.count ?? 0
+            guard pressCount + releaseCount > 0 else { continue }
+
+            let displayCategory = displayName(for: category)
+            categories.append(displayCategory)
+            pressSampleCount += pressCount
+            releaseSampleCount += releaseCount
+            if pressCount > 0 && releaseCount == 0 {
+                missingReleaseCategories.append(displayCategory)
+            }
+        }
+
+        return SoundPackImportReport(
+            id: pack.id,
+            packName: pack.name,
+            sampleCount: pressSampleCount + releaseSampleCount,
+            pressSampleCount: pressSampleCount,
+            releaseSampleCount: releaseSampleCount,
+            categories: categories.sorted(),
+            missingReleaseCategories: missingReleaseCategories.sorted()
+        )
+    }
+
+    private static func displayName(for sampleCategory: String) -> String {
+        KeyCategory(rawValue: sampleCategory)?.displayName ?? sampleCategory.capitalized
+    }
+
     enum ImportError: LocalizedError {
         case unsupportedFormat
         case unzipFailed
@@ -219,20 +256,8 @@ enum BuiltInPacks {
             bestFor: "Recorded Feel",
             description: "Creamy keypress samples extracted from the first section of Creamy VS Clacky VS Thocky.",
             recommendedVolume: 0.46,
-            pitchVariationDefault: 0.010
-        ),
-        bundledRecordingPack(
-            id: "com.keythock.pack.creamy3.recording",
-            name: "Creamy-3",
-            resourcePath: "SoundPacks/Creamy3",
-            category: "linear",
-            tone: "balanced",
-            loudness: "medium",
-            bestFor: "Recorded Feel",
-            description: "Creamy keypress samples extracted from creamy.mov.",
-            recommendedVolume: 0.46,
             pitchVariationDefault: 0.010,
-            sampleCount: 13
+            excludedSampleNumbers: [4]
         ),
         bundledRecordingPack(
             id: "com.keythock.pack.clacky1.recording",
@@ -245,19 +270,6 @@ enum BuiltInPacks {
             description: "Clacky keypress samples extracted from the middle section of Creamy VS Clacky VS Thocky.",
             recommendedVolume: 0.42,
             pitchVariationDefault: 0.008
-        ),
-        bundledRecordingPack(
-            id: "com.keythock.pack.clacky2.recording",
-            name: "Clacky-2",
-            resourcePath: "SoundPacks/Clacky2",
-            category: "clicky",
-            tone: "bright",
-            loudness: "loud",
-            bestFor: "Crisp Typing",
-            description: "Clacky keypress samples extracted from clacky.mov.",
-            recommendedVolume: 0.42,
-            pitchVariationDefault: 0.008,
-            sampleCount: 15
         ),
         bundledRecordingPack(
             id: "com.keythock.pack.clicky1.recording",
@@ -418,10 +430,17 @@ enum BuiltInPacks {
         )
     ]
 
-    private static func samplePaths(category: String = "alpha", count: Int) -> [String] {
+    private static func samplePaths(category: String = "alpha", count: Int, excluding excludedNumbers: Set<Int> = []) -> [String] {
         (1...count).map {
             "samples/\(category)/press_" + String(format: "%02d", $0) + ".wav"
+        }.filter { path in
+            !excludedNumbers.contains(sampleNumber(from: path))
         }
+    }
+
+    private static func sampleNumber(from path: String) -> Int {
+        let fileName = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+        return Int(fileName.replacingOccurrences(of: "press_", with: "")) ?? -1
     }
 
     private static var bundledCreamyKeyboard: SoundPack {
@@ -452,11 +471,12 @@ enum BuiltInPacks {
         pitchVariationDefault: Float,
         sampleCount: Int = 16,
         spaceSampleCount: Int = 0,
-        sampleVariationDefault: Bool = true
+        sampleVariationDefault: Bool = true,
+        excludedSampleNumbers: Set<Int> = []
     ) -> SoundPack {
         var samples = [
             KeyCategory.alpha.rawValue: PackSampleManifest(
-                press: samplePaths(count: sampleCount),
+                press: samplePaths(count: sampleCount, excluding: excludedSampleNumbers),
                 release: nil
             )
         ]

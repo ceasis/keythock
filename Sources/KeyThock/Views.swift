@@ -30,6 +30,10 @@ struct MenuBarPopoverView: View {
 
             MenuControlPanel()
 
+            if model.menuBarHasPermissionIssue {
+                MenuPermissionCallout()
+            }
+
             if model.settings.temporaryMuteUntil != nil {
                 Button {
                     model.settings.clearTemporaryMute()
@@ -38,10 +42,6 @@ struct MenuBarPopoverView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-            }
-
-            if model.permissions.state != .approved {
-                MenuPermissionCallout()
             }
 
             if let error = model.audio.lastError {
@@ -96,7 +96,6 @@ private struct MenuHeaderView: View {
     }
 
     private var statusColor: Color {
-        if model.permissions.state != .approved { return .orange }
         if model.isMutedNow { return .secondary }
         return .green
     }
@@ -186,9 +185,9 @@ private struct MenuPermissionCallout: View {
                     .background(Color.orange.opacity(0.14), in: RoundedRectangle(cornerRadius: 7))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Keyboard access needed")
+                    Text("Enable keyboard sounds")
                         .font(.callout.weight(.semibold))
-                    Text("Add KeyThock in Input Monitoring.")
+                    Text("Allow Input Monitoring so KeyThock can play sounds while you type.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -199,7 +198,7 @@ private struct MenuPermissionCallout: View {
                 Button {
                     model.openSettingsForPermission()
                 } label: {
-                    Label("Open Settings", systemImage: "gearshape")
+                    Label("Open Settings", systemImage: "switch.2")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -259,12 +258,23 @@ private struct MenuFooterView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Label(model.permissions.state == .approved ? "Ready" : model.permissions.state.label, systemImage: footerSymbol)
+            Label(model.focusMenuStatusText, systemImage: footerSymbol)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
 
             Spacer(minLength: 0)
+
+            Button {
+                model.selectedTab = .focus
+                openWindow(id: "main")
+                NSApp.activate(ignoringOtherApps: true)
+            } label: {
+                Image(systemName: "timer")
+                    .frame(width: 24, height: 22)
+            }
+            .buttonStyle(.borderless)
+            .help("Focus")
 
             Button {
                 model.selectedTab = .diagnostics
@@ -308,7 +318,7 @@ private struct MenuFooterView: View {
     }
 
     private var footerSymbol: String {
-        model.permissions.state == .approved ? "checkmark.shield" : "lock.shield"
+        model.focusMenuSymbol
     }
 }
 
@@ -553,6 +563,8 @@ struct SettingsRootView: View {
                         KeySoundsView()
                     case .appProfiles:
                         AppProfilesView()
+                    case .focus:
+                        FocusView()
                     case .diagnostics:
                         DiagnosticsView()
                     case .privacy:
@@ -586,9 +598,7 @@ struct OnboardingView: View {
     private let trySoundPackIds = [
         "com.keythock.pack.creamykeyboard.recording",
         "com.keythock.pack.creamy2.recording",
-        "com.keythock.pack.creamy3.recording",
         "com.keythock.pack.clacky1.recording",
-        "com.keythock.pack.clacky2.recording",
         "com.keythock.pack.clicky1.recording",
         "com.keythock.pack.thocky1.recording",
         "com.keythock.pack.thocky2.recording",
@@ -671,7 +681,7 @@ struct OnboardingView: View {
             }
         case 2:
             VStack(spacing: 14) {
-                InputMonitoringShortcutPanel()
+                LocalPlaybackPanel()
             }
         case 3:
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 12)], spacing: 12) {
@@ -717,7 +727,7 @@ struct OnboardingView: View {
         switch step {
         case 0: return "Make your Mac keyboard sound premium."
         case 1: return "Private by design."
-        case 2: return "One macOS permission is needed."
+        case 2: return "Built for the Mac App Store."
         case 3: return "Choose your first keyboard sound."
         case 4: return "Try it now."
         default: return "You are ready."
@@ -728,7 +738,7 @@ struct OnboardingView: View {
         switch step {
         case 0: return "Choose a switch sound. Start typing. That is it."
         case 1: return "KeyThock reacts to keys without knowing what you typed."
-        case 2: return "macOS requires permission before apps can react to keyboard events in other apps."
+        case 2: return "Allow keyboard access once, then hear sounds while you type across your Mac."
         case 3: return "Pick from the recorded Creamy, Clacky, and Thocky samples."
         case 4: return "Type in the test pad and tune the volume."
         default: return "KeyThock will keep running from the menu bar."
@@ -752,6 +762,12 @@ struct OnboardingView: View {
 
 struct HomeView: View {
     @EnvironmentObject private var model: AppModel
+
+    private var favoritePacks: [SoundPack] {
+        model.packs.allPacks
+            .filter { model.packs.favorites.contains($0.id) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -789,10 +805,19 @@ struct HomeView: View {
                 }
 
                 VStack(spacing: 12) {
-                    InputMonitoringShortcutPanel()
+                    LocalPlaybackPanel()
                     CurrentAppStatusView()
                 }
                 .frame(width: 280)
+            }
+
+            if !favoritePacks.isEmpty {
+                SectionTitle("Favorite Sounds")
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 210), spacing: 12)], spacing: 12) {
+                    ForEach(favoritePacks) { pack in
+                        SoundPackCard(pack: pack, compact: true)
+                    }
+                }
             }
 
             SectionTitle("Recommended Sounds")
@@ -805,10 +830,19 @@ struct HomeView: View {
     }
 }
 
+private enum SoundPackScope: String, CaseIterable, Identifiable {
+    case all = "All"
+    case favorites = "Favorites"
+    case imported = "Imported"
+
+    var id: String { rawValue }
+}
+
 struct SoundPacksView: View {
     @EnvironmentObject private var model: AppModel
     @State private var search = ""
     @State private var category = "All"
+    @State private var scope: SoundPackScope = .all
     @State private var showImporter = false
 
     private var categories: [String] {
@@ -816,10 +850,32 @@ struct SoundPacksView: View {
     }
 
     private var filteredPacks: [SoundPack] {
-        model.packs.allPacks.filter { pack in
-            let matchesSearch = search.isEmpty || pack.searchText.contains(search.lowercased())
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return model.packs.allPacks.filter { pack in
+            let matchesScope: Bool
+            switch scope {
+            case .all:
+                matchesScope = true
+            case .favorites:
+                matchesScope = model.packs.favorites.contains(pack.id)
+            case .imported:
+                if case .imported = pack.source {
+                    matchesScope = true
+                } else {
+                    matchesScope = false
+                }
+            }
+            let matchesSearch = query.isEmpty || pack.searchText.contains(query)
             let matchesCategory = category == "All" || pack.category == category
-            return matchesSearch && matchesCategory
+            return matchesScope && matchesSearch && matchesCategory
+        }
+        .sorted { lhs, rhs in
+            let lhsFavorite = model.packs.favorites.contains(lhs.id)
+            let rhsFavorite = model.packs.favorites.contains(rhs.id)
+            if lhsFavorite != rhsFavorite { return lhsFavorite }
+            if lhs.id == model.settings.currentPackId { return true }
+            if rhs.id == model.settings.currentPackId { return false }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
     }
 
@@ -827,6 +883,13 @@ struct SoundPacksView: View {
         VStack(alignment: .leading, spacing: 16) {
             HeaderView(title: "Sound Packs", subtitle: "Browse built-in packs, preview tones, and import custom keyboards.")
             HStack {
+                Picker("View", selection: $scope) {
+                    ForEach(SoundPackScope.allCases) { scope in
+                        Text(scope.rawValue).tag(scope)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 260)
                 TextField("Search", text: $search)
                     .textFieldStyle(.roundedBorder)
                 Picker("Category", selection: $category) {
@@ -839,13 +902,23 @@ struct SoundPacksView: View {
                 }
             }
 
-            if let message = model.packs.importMessage {
+            if let report = model.packs.importReport {
+                SoundPackImportReportView(report: report)
+            } else if let message = model.packs.importMessage {
                 StatusBanner(symbol: "info.circle", title: "Import", message: message)
             }
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12)], spacing: 12) {
-                ForEach(filteredPacks) { pack in
-                    SoundPackCard(pack: pack)
+            if filteredPacks.isEmpty {
+                StatusBanner(
+                    symbol: scope == .favorites ? "star" : "magnifyingglass",
+                    title: scope == .favorites ? "No favorite packs yet" : "No sound packs found",
+                    message: scope == .favorites ? "Star packs you use often and they will appear here." : "Try another search or category."
+                )
+            } else {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12)], spacing: 12) {
+                    ForEach(filteredPacks) { pack in
+                        SoundPackCard(pack: pack)
+                    }
                 }
             }
         }
@@ -866,6 +939,8 @@ struct SoundPacksView: View {
 struct MixerView: View {
     @EnvironmentObject private var model: AppModel
     @State private var selectedPreset: MixerPreset?
+    @State private var selectedCustomPresetId: String?
+    @State private var customPresetName = ""
     @State private var showAdvanced = false
 
     private let columns = [GridItem(.adaptive(minimum: 300), spacing: 16)]
@@ -892,6 +967,7 @@ struct MixerView: View {
                         get: { model.echoEnabled },
                         set: {
                             selectedPreset = nil
+                            selectedCustomPresetId = nil
                             model.setEchoEnabled($0)
                         }
                     ))
@@ -901,6 +977,7 @@ struct MixerView: View {
                         get: { model.reverbEnabled },
                         set: {
                             selectedPreset = nil
+                            selectedCustomPresetId = nil
                             model.setReverbEnabled($0)
                         }
                     ))
@@ -910,6 +987,7 @@ struct MixerView: View {
                         get: { model.settings.autoDuckingEnabled },
                         set: {
                             selectedPreset = nil
+                            selectedCustomPresetId = nil
                             model.setAutoDuckingEnabled($0)
                         }
                     ))
@@ -922,6 +1000,7 @@ struct MixerView: View {
                     }
                     Button {
                         selectedPreset = nil
+                        selectedCustomPresetId = nil
                         model.settings.resetMixer()
                         model.audio.applyMixer(settings: model.settings.snapshot)
                         model.preview(model.currentPack)
@@ -941,9 +1020,61 @@ struct MixerView: View {
                                 isSelected: selectedPreset == preset
                             ) {
                                 selectedPreset = preset
+                                selectedCustomPresetId = nil
                                 preset.apply(to: model.settings)
                                 model.audio.applyMixer(settings: model.settings.snapshot)
                                 model.preview(model.currentPack)
+                            }
+                        }
+                    }
+
+                    Divider()
+
+                    HStack(spacing: 10) {
+                        MixerHeader(symbol: "tray.and.arrow.down", title: "Saved Presets")
+                        Spacer()
+                        TextField("Preset name", text: $customPresetName)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 180)
+                        Button {
+                            model.settings.saveCustomMixerPreset(named: customPresetName)
+                            customPresetName = ""
+                            selectedPreset = nil
+                            selectedCustomPresetId = model.settings.customMixerPresets.first?.id
+                        } label: {
+                            Label("Save", systemImage: "plus")
+                        }
+                    }
+
+                    if model.settings.customMixerPresets.isEmpty {
+                        Text("Save your current mixer settings when you find a sound you want to keep.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 190), spacing: 10)], spacing: 10) {
+                            ForEach(model.settings.customMixerPresets) { preset in
+                                CustomMixerPresetButton(
+                                    preset: preset,
+                                    isSelected: selectedCustomPresetId == preset.id,
+                                    apply: {
+                                        selectedPreset = nil
+                                        selectedCustomPresetId = preset.id
+                                        model.settings.applyCustomMixerPreset(preset)
+                                        model.audio.applyMixer(settings: model.settings.snapshot)
+                                        if model.settings.autoDuckingEnabled {
+                                            model.audioActivity.refreshIfNeeded(force: true)
+                                        } else {
+                                            model.audioActivity.clear()
+                                        }
+                                        model.preview(model.currentPack)
+                                    },
+                                    delete: {
+                                        if selectedCustomPresetId == preset.id {
+                                            selectedCustomPresetId = nil
+                                        }
+                                        model.settings.deleteCustomMixerPreset(preset)
+                                    }
+                                )
                             }
                         }
                     }
@@ -1017,11 +1148,37 @@ struct MixerView: View {
     private var advancedPlaybackPanel: some View {
         VStack(alignment: .leading, spacing: 14) {
             MixerHeader(symbol: "keyboard.badge.ellipsis", title: "Playback")
-            Toggle("Sample variation", isOn: Binding(get: { model.settings.sampleVariation }, set: { model.settings.sampleVariation = $0 }))
-            Toggle("Release sounds", isOn: Binding(get: { model.settings.releaseSoundsEnabled }, set: { model.settings.releaseSoundsEnabled = $0 }))
-            Toggle("Modifier sounds", isOn: Binding(get: { model.settings.modifierSoundsEnabled }, set: { model.settings.modifierSoundsEnabled = $0 }))
-            Toggle("Limiter", isOn: Binding(get: { model.settings.limiterEnabled }, set: { model.settings.limiterEnabled = $0 }))
-            Picker("Key Repeat", selection: Binding(get: { model.settings.repeatMode }, set: { model.settings.repeatMode = $0 })) {
+            Picker("Sample Mode", selection: Binding(get: { model.settings.samplePlaybackMode }, set: {
+                selectedPreset = nil
+                selectedCustomPresetId = nil
+                model.settings.samplePlaybackMode = $0
+            })) {
+                ForEach(SamplePlaybackMode.allCases) { mode in
+                    Text(mode.label).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .help(model.settings.samplePlaybackMode.helpText)
+            Toggle("Release sounds", isOn: Binding(get: { model.settings.releaseSoundsEnabled }, set: {
+                selectedPreset = nil
+                selectedCustomPresetId = nil
+                model.settings.releaseSoundsEnabled = $0
+            }))
+            Toggle("Modifier sounds", isOn: Binding(get: { model.settings.modifierSoundsEnabled }, set: {
+                selectedPreset = nil
+                selectedCustomPresetId = nil
+                model.settings.modifierSoundsEnabled = $0
+            }))
+            Toggle("Limiter", isOn: Binding(get: { model.settings.limiterEnabled }, set: {
+                selectedPreset = nil
+                selectedCustomPresetId = nil
+                model.settings.limiterEnabled = $0
+            }))
+            Picker("Key Repeat", selection: Binding(get: { model.settings.repeatMode }, set: {
+                selectedPreset = nil
+                selectedCustomPresetId = nil
+                model.settings.repeatMode = $0
+            })) {
                 ForEach(RepeatMode.allCases) { mode in
                     Text(mode.label).tag(mode)
                 }
@@ -1045,6 +1202,7 @@ struct MixerView: View {
             set: {
                 model.settings[keyPath: keyPath] = Float($0)
                 selectedPreset = nil
+                selectedCustomPresetId = nil
                 model.audio.applyMixer(settings: model.settings.snapshot)
             }
         )
@@ -1084,15 +1242,15 @@ private enum MixerPreset: String, CaseIterable, Identifiable {
     func apply(to settings: SettingsStore) {
         switch self {
         case .balanced:
-            assign(settings, master: 0.55, press: 1.0, release: 0.35, spacebar: 1.15, modifiers: 0.30, pitch: 0, variation: 0.020, bass: 0, brightness: 0, room: 0, sampleVariation: true, releaseSounds: false, modifierSounds: true, repeatMode: .reduced, repeatRate: 10)
+            assign(settings, master: 0.55, press: 1.0, release: 0.35, spacebar: 1.15, modifiers: 0.30, pitch: 0, variation: 0.020, bass: 0, brightness: 0, room: 0, sampleMode: .stablePerKey, releaseSounds: false, modifierSounds: true, repeatMode: .reduced, repeatRate: 10)
         case .soft:
-            assign(settings, master: 0.38, press: 0.80, release: 0.22, spacebar: 0.88, modifiers: 0.16, pitch: -0.75, variation: 0.012, bass: 0.12, brightness: -0.25, room: 0, sampleVariation: true, releaseSounds: false, modifierSounds: false, repeatMode: .firstOnly, repeatRate: 7)
+            assign(settings, master: 0.38, press: 0.80, release: 0.22, spacebar: 0.88, modifiers: 0.16, pitch: -0.75, variation: 0.012, bass: 0.12, brightness: -0.25, room: 0, sampleMode: .stablePerKey, releaseSounds: false, modifierSounds: false, repeatMode: .firstOnly, repeatRate: 7)
         case .deep:
-            assign(settings, master: 0.52, press: 1.0, release: 0.28, spacebar: 1.25, modifiers: 0.22, pitch: -2.0, variation: 0.018, bass: 0.55, brightness: -0.35, room: 0, sampleVariation: true, releaseSounds: false, modifierSounds: true, repeatMode: .reduced, repeatRate: 9)
+            assign(settings, master: 0.52, press: 1.0, release: 0.28, spacebar: 1.25, modifiers: 0.22, pitch: -2.0, variation: 0.018, bass: 0.55, brightness: -0.35, room: 0, sampleMode: .stablePerKey, releaseSounds: false, modifierSounds: true, repeatMode: .reduced, repeatRate: 9)
         case .crisp:
-            assign(settings, master: 0.48, press: 1.05, release: 0.25, spacebar: 1.0, modifiers: 0.20, pitch: 0.75, variation: 0.012, bass: -0.15, brightness: 0.45, room: 0, sampleVariation: true, releaseSounds: false, modifierSounds: true, repeatMode: .reduced, repeatRate: 12)
+            assign(settings, master: 0.48, press: 1.05, release: 0.25, spacebar: 1.0, modifiers: 0.20, pitch: 0.75, variation: 0.012, bass: -0.15, brightness: 0.45, room: 0, sampleMode: .stablePerKey, releaseSounds: false, modifierSounds: true, repeatMode: .reduced, repeatRate: 12)
         case .calm:
-            assign(settings, master: 0.36, press: 0.72, release: 0.18, spacebar: 0.90, modifiers: 0.12, pitch: -0.25, variation: 0.008, bass: 0.20, brightness: -0.15, room: 0, sampleVariation: true, releaseSounds: false, modifierSounds: false, repeatMode: .firstOnly, repeatRate: 6)
+            assign(settings, master: 0.36, press: 0.72, release: 0.18, spacebar: 0.90, modifiers: 0.12, pitch: -0.25, variation: 0.008, bass: 0.20, brightness: -0.15, room: 0, sampleMode: .stablePerKey, releaseSounds: false, modifierSounds: false, repeatMode: .firstOnly, repeatRate: 6)
         }
     }
 
@@ -1109,7 +1267,7 @@ private enum MixerPreset: String, CaseIterable, Identifiable {
         bass: Float,
         brightness: Float,
         room: Float,
-        sampleVariation: Bool,
+        sampleMode: SamplePlaybackMode,
         releaseSounds: Bool,
         modifierSounds: Bool,
         repeatMode: RepeatMode,
@@ -1126,7 +1284,7 @@ private enum MixerPreset: String, CaseIterable, Identifiable {
         settings.brightness = brightness
         settings.echoAmount = 0
         settings.roomAmount = room
-        settings.sampleVariation = sampleVariation
+        settings.samplePlaybackMode = sampleMode
         settings.releaseSoundsEnabled = releaseSounds
         settings.modifierSoundsEnabled = modifierSounds
         settings.limiterEnabled = true
@@ -1179,13 +1337,58 @@ private struct MixerPresetButton: View {
     }
 }
 
+private struct CustomMixerPresetButton: View {
+    let preset: CustomMixerPreset
+    let isSelected: Bool
+    let apply: () -> Void
+    let delete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button(action: apply) {
+                HStack(spacing: 8) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "slider.horizontal.3")
+                        .frame(width: 18)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(preset.name)
+                            .font(.callout.weight(.semibold))
+                            .lineLimit(1)
+                        Text("\(Int((preset.masterVolume * 100).rounded()))% volume")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 9)
+                .frame(maxWidth: .infinity)
+                .background(isSelected ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 7))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7)
+                        .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.18), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .help("Apply \(preset.name)")
+
+            Button(role: .destructive, action: delete) {
+                Image(systemName: "trash")
+                    .frame(width: 26, height: 26)
+            }
+            .buttonStyle(.plain)
+            .help("Delete \(preset.name)")
+        }
+    }
+}
+
 struct AppProfilesView: View {
     @EnvironmentObject private var model: AppModel
     @State private var showAppPicker = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HeaderView(title: "App Profiles", subtitle: "Optional rules for specific apps. Add an app, then choose whether it uses a custom sound or stays muted.")
+            HeaderView(title: "Sound Recipes", subtitle: "Use creamy sounds in writing apps, clicky sounds in code editors, and mute calls automatically.")
             HStack {
                 Button {
                     showAppPicker = true
@@ -1197,59 +1400,86 @@ struct AppProfilesView: View {
                 } label: {
                     Label("Add Frontmost", systemImage: "scope")
                 }
+                Button {
+                    model.profileService.addSuggestedRecipes()
+                } label: {
+                    Label("Add Suggested", systemImage: "sparkles")
+                }
                 Button("Clear Profiles") {
                     model.profileService.resetDefaults()
                 }
             }
-            Text("Tip: switch to another app first, then use Add Frontmost. KeyThock itself is ignored.")
+            Text("Suggested recipes add common writing apps, code editors, and call apps. Switch to another app first, then use Add Frontmost for anything custom.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
             if model.profileService.profiles.isEmpty {
                 StatusBanner(
-                    symbol: "app.badge",
-                    title: "No app-specific rules",
-                    message: "Typing sounds use the active sound pack in every app until you add a rule."
+                    symbol: "paintpalette",
+                    title: "No sound recipes yet",
+                    message: "Typing sounds use the active sound pack in every app until you add a recipe."
                 )
+            }
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 12)], spacing: 12) {
+                RecipeHintCard(recipe: .creamyWriting, text: "For Notes, Pages, TextEdit, and long writing sessions.")
+                RecipeHintCard(recipe: .clickyCoding, text: "For Xcode, VS Code, and focused coding.")
+                RecipeHintCard(recipe: .mutedCalls, text: "For Zoom, Teams, FaceTime, Discord, and Webex.")
             }
 
             ForEach(model.profileService.profiles) { profile in
                 Panel {
-                    HStack(spacing: 14) {
-                        Image(systemName: profile.mute ? "speaker.slash" : "speaker.wave.2")
-                            .frame(width: 28)
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(profile.displayName)
-                                .font(.headline)
-                            Text(profile.bundleId)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Toggle("Enabled", isOn: Binding(
-                            get: { profile.enabled },
-                            set: { _ in model.profileService.toggleEnabled(profile) }
-                        ))
-                        Toggle("Mute", isOn: Binding(
-                            get: { profile.mute },
-                            set: { _ in model.profileService.toggleMute(profile) }
-                        ))
-                        Picker("Pack", selection: Binding(
-                            get: { profile.soundPackId ?? "" },
-                            set: { model.profileService.setSoundPack(profile, packId: $0.isEmpty ? nil : $0) }
-                        )) {
-                            Text("Default").tag("")
-                            ForEach(model.packs.allPacks) { pack in
-                                Text(pack.name).tag(pack.id)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 14) {
+                            Image(systemName: AppSoundRecipe.inferred(from: profile).symbolName)
+                                .frame(width: 28)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(profile.displayName)
+                                    .font(.headline)
+                                Text(profile.bundleId)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
                             }
+                            Spacer()
+                            Toggle("Enabled", isOn: Binding(
+                                get: { profile.enabled },
+                                set: { _ in model.profileService.toggleEnabled(profile) }
+                            ))
+                            Button(role: .destructive) {
+                                model.profileService.delete(profile)
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                            .help("Delete")
                         }
-                        .frame(width: 180)
-                        Button(role: .destructive) {
-                            model.profileService.delete(profile)
-                        } label: {
-                            Image(systemName: "trash")
+
+                        HStack(spacing: 12) {
+                            Picker("Recipe", selection: Binding(
+                                get: { AppSoundRecipe.inferred(from: profile) },
+                                set: { model.profileService.applyRecipe($0, to: profile) }
+                            )) {
+                                ForEach(AppSoundRecipe.allCases) { recipe in
+                                    Label(recipe.label, systemImage: recipe.symbolName).tag(recipe)
+                                }
+                            }
+                            .frame(width: 180)
+
+                            Toggle("Mute", isOn: Binding(
+                                get: { profile.mute },
+                                set: { _ in model.profileService.toggleMute(profile) }
+                            ))
+
+                            Picker("Pack", selection: Binding(
+                                get: { profile.soundPackId ?? "" },
+                                set: { model.profileService.setSoundPack(profile, packId: $0.isEmpty ? nil : $0) }
+                            )) {
+                                Text("Default").tag("")
+                                ForEach(model.packs.allPacks) { pack in
+                                    Text(pack.name).tag(pack.id)
+                                }
+                            }
+                            .frame(width: 190)
                         }
-                        .help("Delete")
                     }
                 }
             }
@@ -1261,6 +1491,168 @@ struct AppProfilesView: View {
         ) { result in
             if case let .success(urls) = result, let url = urls.first {
                 model.profileService.addApp(from: url, packId: model.settings.currentPackId)
+            }
+        }
+    }
+}
+
+private struct RecipeHintCard: View {
+    let recipe: AppSoundRecipe
+    let text: String
+
+    var body: some View {
+        Panel {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: recipe.symbolName)
+                    .font(.title3)
+                Text(recipe.title)
+                    .font(.headline)
+                Text(text)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+struct FocusView: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HeaderView(title: "Focus", subtitle: "Pomodoro sessions and character countdowns for writing with keyboard sounds.")
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 14)], spacing: 14) {
+                Panel {
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack {
+                            Label(model.pomodoroPhase.label, systemImage: model.pomodoroPhase.symbolName)
+                                .font(.headline)
+                            Spacer()
+                            Text(model.pomodoroStatusText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Text(model.pomodoroTimeText)
+                            .font(.system(size: 44, weight: .bold, design: .rounded).monospacedDigit())
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+
+                        ProgressView(value: model.pomodoroProgress)
+
+                        Stepper(value: Binding(
+                            get: { model.settings.pomodoroWorkMinutes },
+                            set: {
+                                model.settings.pomodoroWorkMinutes = $0
+                                if model.pomodoroPhase == .idle && !model.pomodoroIsRunning {
+                                    model.resetPomodoro()
+                                }
+                            }
+                        ), in: 5...90, step: 5) {
+                            Text("Focus: \(model.settings.pomodoroWorkMinutes) min")
+                        }
+
+                        Stepper(value: Binding(
+                            get: { model.settings.pomodoroBreakMinutes },
+                            set: {
+                                model.settings.pomodoroBreakMinutes = $0
+                                if model.pomodoroPhase == .breakTime && !model.pomodoroIsRunning {
+                                    model.startPomodoroBreak()
+                                    model.pausePomodoro()
+                                }
+                            }
+                        ), in: 1...30, step: 1) {
+                            Text("Break: \(model.settings.pomodoroBreakMinutes) min")
+                        }
+
+                        HStack {
+                            Button {
+                                model.startPomodoroWork()
+                            } label: {
+                                Label("Start Focus", systemImage: "play.fill")
+                            }
+                            .buttonStyle(.borderedProminent)
+
+                            Button {
+                                if model.pomodoroIsRunning {
+                                    model.pausePomodoro()
+                                } else {
+                                    model.resumePomodoro()
+                                }
+                            } label: {
+                                Label(model.pomodoroIsRunning ? "Pause" : "Resume", systemImage: model.pomodoroIsRunning ? "pause.fill" : "play")
+                            }
+                            .disabled(model.pomodoroPhase == .idle || model.pomodoroRemainingSeconds == 0)
+
+                            Button {
+                                model.startPomodoroBreak()
+                            } label: {
+                                Label("Break", systemImage: "cup.and.saucer")
+                            }
+
+                            Button("Reset") {
+                                model.resetPomodoro()
+                            }
+                        }
+                    }
+                }
+
+                Panel {
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack {
+                            Label("Character Countdown", systemImage: "textformat.123")
+                                .font(.headline)
+                            Spacer()
+                            Text(model.characterCountdownStatusText)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Text(model.characterCountdownText)
+                            .font(.system(size: 40, weight: .bold, design: .rounded).monospacedDigit())
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+
+                        ProgressView(value: model.characterCountdownProgress)
+
+                        Stepper(value: Binding(
+                            get: { model.settings.characterCountdownTarget },
+                            set: {
+                                model.settings.characterCountdownTarget = $0
+                                if !model.characterCountdownActive {
+                                    model.resetCharacterCountdown()
+                                }
+                            }
+                        ), in: 50...10_000, step: 50) {
+                            Text("Goal: \(model.settings.characterCountdownTarget) characters")
+                        }
+
+                        Text("Counts text-like key presses such as letters, numbers, punctuation, spaces, tabs, and returns. It does not store the characters.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        HStack {
+                            Button {
+                                model.startCharacterCountdown()
+                            } label: {
+                                Label("Start", systemImage: "play.fill")
+                            }
+                            .buttonStyle(.borderedProminent)
+
+                            Button {
+                                model.pauseCharacterCountdown()
+                            } label: {
+                                Label("Pause", systemImage: "pause.fill")
+                            }
+                            .disabled(!model.characterCountdownActive)
+
+                            Button("Reset") {
+                                model.resetCharacterCountdown()
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -1278,11 +1670,11 @@ struct PrivacyView: View {
                     PrivacyBullet(text: "No key activity is sent to servers.")
                     PrivacyBullet(text: "No screenshots or clipboard content are read.")
                     PrivacyBullet(text: "No password fields are bypassed.")
-                    PrivacyBullet(text: "Keyboard events are used only to select local audio.")
+                    PrivacyBullet(text: "Keyboard events are used only for local audio, recipes, and private counters.")
                 }
             }
             HStack {
-                InputMonitoringShortcutPanel()
+                LocalPlaybackPanel()
             }
             Button(role: .destructive) {
                 model.resetLocalData()
@@ -1298,7 +1690,7 @@ struct DiagnosticsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HeaderView(title: "Diagnostics", subtitle: "Check audio, permission, and typing detection in one place.")
+            HeaderView(title: "Diagnostics", subtitle: "Check audio and local typing detection in one place.")
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 12)], spacing: 12) {
                 DiagnosticTile(
@@ -1308,14 +1700,14 @@ struct DiagnosticsView: View {
                     good: model.audio.isRunning && model.audio.lastError == nil
                 )
                 DiagnosticTile(
-                    symbol: model.permissions.state == .approved ? "checkmark.shield.fill" : "lock.shield",
-                    title: "Input Monitoring",
+                    symbol: model.listenerState.isRunning ? "checkmark.shield.fill" : "lock.shield",
+                    title: "Keyboard Input",
                     value: model.permissions.state.label,
-                    good: model.permissions.state == .approved
+                    good: model.listenerState.isRunning
                 )
                 DiagnosticTile(
                     symbol: model.listenerState.isRunning ? "keyboard.badge.ellipsis" : "exclamationmark.triangle",
-                    title: "Keyboard Listener",
+                    title: "Local Listener",
                     value: model.listenerStatusText,
                     good: model.listenerState.isRunning
                 )
@@ -1359,14 +1751,14 @@ struct DiagnosticsView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Typing Test")
                         .font(.headline)
-                    Text("Type anywhere outside the test pad after Input Monitoring is enabled. This line should update with the latest key event.")
+                    Text("Type in the in-app pad to verify local keyboard sounds.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     HStack {
                         Label(model.lastKeyboardEventText, systemImage: "keyboard")
                             .font(.callout)
                         Spacer()
-                        Button("Recheck") {
+                        Button("Restart Listener") {
                             model.refreshPermissionStatus()
                             model.restartKeyboardListener()
                         }
@@ -1387,7 +1779,7 @@ struct DiagnosticsView: View {
                             Label("Open Debug Log", systemImage: "doc.text.magnifyingglass")
                         }
                     }
-                    InputMonitoringShortcutPanel(framed: false)
+                    LocalPlaybackPanel(framed: false)
                 }
             }
 
@@ -1395,7 +1787,7 @@ struct DiagnosticsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("In-App Pad")
                         .font(.headline)
-                    Text("This pad previews sounds without relying on Input Monitoring. It is useful for separating audio issues from permission issues.")
+                    Text("This pad uses local app keyboard events, which are allowed for Mac App Store apps.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     TestTypingPad()
@@ -1443,26 +1835,6 @@ struct GeneralSettingsView: View {
                     Toggle("Launch at login", isOn: Binding(get: { model.settings.launchAtLogin }, set: { model.settings.launchAtLogin = $0 }))
                     Toggle("Show Dock icon", isOn: Binding(get: { model.settings.showDockIcon }, set: { model.settings.showDockIcon = $0 }))
                     Toggle("Menu bar animation", isOn: Binding(get: { model.settings.menuBarAnimation }, set: { model.settings.menuBarAnimation = $0 }))
-                    Toggle("Global mute hotkey", isOn: Binding(
-                        get: { model.settings.globalMuteHotkeyEnabled },
-                        set: { model.setGlobalMuteHotkeyEnabled($0) }
-                    ))
-                    Picker("Shortcut", selection: Binding(
-                        get: { model.settings.globalMuteHotkey },
-                        set: { model.setGlobalMuteHotkey($0) }
-                    )) {
-                        ForEach(GlobalMuteHotkey.allCases) { hotkey in
-                            Text(hotkey.label).tag(hotkey)
-                        }
-                    }
-                    .disabled(!model.settings.globalMuteHotkeyEnabled)
-                    HStack {
-                        Label(model.hotkeys.statusText, systemImage: model.hotkeys.isRegistered ? "keyboard.badge.ellipsis" : "exclamationmark.triangle")
-                        Spacer()
-                        Text(model.hotkeys.isRegistered ? "Ready" : "Not registered")
-                            .foregroundStyle(.secondary)
-                    }
-                    .font(.callout)
                 }
             }
             Panel {
@@ -1501,9 +1873,9 @@ struct GeneralSettingsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Troubleshooting")
                         .font(.headline)
-                    InputMonitoringShortcutPanel(framed: false)
+                    LocalPlaybackPanel(framed: false)
                     Button("Restart Audio Engine") { model.restartAudio() }
-                    Button("Restart Keyboard Listener") { model.restartKeyboardListener() }
+                    Button("Restart Local Listener") { model.restartKeyboardListener() }
                     Button("Mute for 30 Minutes") {
                         model.settings.mute(for: 30 * 60)
                     }
@@ -1605,11 +1977,6 @@ struct TestTypingPad: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(model.transientPulse ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: 1)
                 )
-                .onChange(of: text) { newValue in
-                    guard focused else { return }
-                    let category: KeyCategory = newValue.last == " " ? .space : .alpha
-                    model.previewKey(category: category)
-                }
                 .onChange(of: focused) { isFocused in
                     model.isTypingPreviewFocused = isFocused
                 }
@@ -1709,6 +2076,65 @@ struct StatusBanner: View {
     }
 }
 
+struct SoundPackImportReportView: View {
+    let report: SoundPackImportReport
+
+    var body: some View {
+        Panel {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.green)
+                        .frame(width: 24)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Imported \(report.packName)")
+                            .font(.headline)
+                        Text("Found \(report.sampleCount) samples across \(report.categories.count) categories.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+
+                HStack(spacing: 10) {
+                    ImportReportMetric(title: "Press", value: "\(report.pressSampleCount)")
+                    ImportReportMetric(title: "Release", value: "\(report.releaseSampleCount)")
+                    ImportReportMetric(title: "Categories", value: "\(report.categories.count)")
+                }
+
+                Text(report.categories.joined(separator: ", "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+
+                if !report.missingReleaseCategories.isEmpty {
+                    Label("Release samples missing for \(report.missingReleaseCategories.joined(separator: ", ")); press samples will be reused.", systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+}
+
+private struct ImportReportMetric: View {
+    let title: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline.monospacedDigit())
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 7))
+    }
+}
+
 struct CurrentAppStatusView: View {
     @EnvironmentObject private var model: AppModel
 
@@ -1735,7 +2161,7 @@ struct CurrentAppStatusView: View {
     }
 }
 
-struct InputMonitoringShortcutPanel: View {
+struct LocalPlaybackPanel: View {
     @EnvironmentObject private var model: AppModel
     var compact = false
     var framed = true
@@ -1760,27 +2186,18 @@ struct InputMonitoringShortcutPanel: View {
                 Spacer(minLength: 0)
             }
 
-            primaryPermissionButton
-
             HStack(spacing: 8) {
                 permissionIconButton(
                     systemName: "keyboard",
-                    title: "Prompt Permission",
-                    help: "Ask macOS to show the Input Monitoring permission prompt."
+                    title: "Open Settings",
+                    help: "Open Input Monitoring settings."
                 ) {
-                    model.requestPermission()
-                }
-                permissionIconButton(
-                    systemName: "folder",
-                    title: "Show App",
-                    help: "Reveal the exact app bundle to add with the + button."
-                ) {
-                    model.revealAppForPermission()
+                    model.openSettingsForPermission()
                 }
                 permissionIconButton(
                     systemName: "arrow.clockwise",
-                    title: "Recheck",
-                    help: "Refresh permission status and restart the keyboard listener."
+                    title: "Restart",
+                    help: "Restart keyboard monitoring."
                 ) {
                     model.refreshPermissionStatus()
                     model.restartKeyboardListener()
@@ -1792,41 +2209,21 @@ struct InputMonitoringShortcutPanel: View {
     }
 
     private var permissionSymbol: String {
-        model.permissions.state == .approved ? "checkmark.shield.fill" : "keyboard.badge.ellipsis"
+        model.listenerState.isRunning ? "checkmark.shield.fill" : "keyboard.badge.ellipsis"
     }
 
     private var permissionColor: Color {
-        model.permissions.state == .approved ? .green : .orange
+        model.listenerState.isRunning ? .green : .orange
     }
 
     private var permissionTitle: String {
-        model.permissions.state == .approved ? "Input Monitoring on" : "Input Monitoring needed"
+        model.listenerState.isRunning ? "Keyboard access ready" : "Keyboard access needed"
     }
 
     private var permissionMessage: String {
-        model.permissions.state == .approved
-            ? "Real typing can trigger sounds across apps."
-            : "Add KeyThock in macOS settings, then recheck."
-    }
-
-    @ViewBuilder private var primaryPermissionButton: some View {
-        if model.permissions.state == .approved {
-            Button {
-                model.openSettingsForPermission()
-            } label: {
-                Label("Open Input Monitoring", systemImage: "gearshape")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-        } else {
-            Button {
-                model.openSettingsForPermission()
-            } label: {
-                Label("Open Input Monitoring", systemImage: "gearshape")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-        }
+        model.listenerState.isRunning
+            ? "Type in any app to hear sounds."
+            : "Enable Input Monitoring if typing is silent."
     }
 
     private func permissionIconButton(

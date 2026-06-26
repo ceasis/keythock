@@ -541,7 +541,7 @@ def draw_diagnostics(img: Image.Image, draw: ImageDraw.ImageDraw, screen: Screen
         text(draw, (x + 96, y + 78), value, 28, color)
     ui_panel(draw, (cx, cy + 326, x2 - 60, cy + 558), (248, 251, 253))
     text(draw, (cx + 32, cy + 360), "Test typing sound", 31, DARK)
-    text(draw, (cx + 32, cy + 408), "Type here to confirm the app can hear key events and play local samples.", 23, MUTED_DARK)
+    text(draw, (cx + 32, cy + 408), "Type here or in another app to confirm local keyboard sounds.", 23, MUTED_DARK)
     rounded(draw, (cx + 32, cy + 468, x2 - 95, cy + 534), 14, (255, 255, 255), outline=LINE, width=2)
     text(draw, (cx + 58, cy + 490), "The quick brown fox taps Creamy-2...", 24, (120, 130, 142))
     ui_panel(draw, (cx, cy + 590, x2 - 60, y2 - 64), (248, 251, 253))
@@ -550,7 +550,7 @@ def draw_diagnostics(img: Image.Image, draw: ImageDraw.ImageDraw, screen: Screen
         ("Open Input Monitoring", "System Settings shortcut"),
         ("Show App", "Reveal the exact app bundle to add"),
         ("Recheck", "Refresh permission and listener status"),
-        ("Restart Keyboard Listener", "Restart event tap without quitting"),
+        ("Restart Keyboard Listener", "Restart event monitoring"),
     ]
     for idx, (label, detail) in enumerate(rows):
         y = cy + 692 + idx * 68
@@ -599,7 +599,7 @@ def draw_privacy(img: Image.Image, draw: ImageDraw.ImageDraw, screen: Screen) ->
     rounded(draw, (cx + 1020, cy + 905, cx + 1510, cy + 978), 18, (238, 242, 246), outline=LINE, width=2)
     text(draw, (cx + 1265, cy + 930), "No server. No account. No tracking.", 25, DARK, anchor="ma")
 
-    callout(img, 176, 1048, "Privacy-forward", "KeyThock listens for timing and key category, not typed content.", screen.accent, w=540)
+    callout(img, 176, 1048, "Privacy-forward", "KeyThock listens for timing and key identity, not typed content.", screen.accent, w=540)
     callout(img, 176, 1238, "Local by default", "Sounds and settings stay on the Mac unless the user exports them.", screen.secondary, w=540)
 
 
@@ -663,7 +663,7 @@ def main() -> None:
         Screen(
             "05-diagnostics.png",
             "No guessing when permissions matter.",
-            "Built-in diagnostics show audio, Input Monitoring, listener health, and real typing playback status.",
+            "Built-in diagnostics show audio, Input Monitoring, listener health, and typing playback status.",
             "Diagnostics",
             ORANGE,
             GREEN,

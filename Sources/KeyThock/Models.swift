@@ -87,6 +87,128 @@ enum RepeatMode: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum SamplePlaybackMode: String, Codable, CaseIterable, Identifiable {
+    case stablePerKey
+    case singleSample
+    case randomEveryPress
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .stablePerKey: return "Per Key"
+        case .singleSample: return "Single"
+        case .randomEveryPress: return "Random"
+        }
+    }
+
+    var helpText: String {
+        switch self {
+        case .stablePerKey:
+            return "Different keys can use different samples; the same key stays consistent."
+        case .singleSample:
+            return "Every unassigned key uses the first sample."
+        case .randomEveryPress:
+            return "Every press can choose a different sample."
+        }
+    }
+
+    var usesMultipleSamples: Bool {
+        self != .singleSample
+    }
+}
+
+enum AppSoundRecipe: String, CaseIterable, Identifiable {
+    case defaultSound
+    case creamyWriting
+    case clickyCoding
+    case mutedCalls
+    case custom
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .defaultSound: return "Default"
+        case .creamyWriting: return "Creamy"
+        case .clickyCoding: return "Clicky"
+        case .mutedCalls: return "Muted"
+        case .custom: return "Custom"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .defaultSound: return "Use Default"
+        case .creamyWriting: return "Creamy Writing"
+        case .clickyCoding: return "Clicky Coding"
+        case .mutedCalls: return "Mute Calls"
+        case .custom: return "Custom Recipe"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .defaultSound: return "speaker.wave.2"
+        case .creamyWriting: return "text.cursor"
+        case .clickyCoding: return "chevron.left.forwardslash.chevron.right"
+        case .mutedCalls: return "video.slash"
+        case .custom: return "slider.horizontal.3"
+        }
+    }
+
+    var soundPackId: String? {
+        switch self {
+        case .creamyWriting:
+            return "com.keythock.pack.creamy2.recording"
+        case .clickyCoding:
+            return "com.keythock.pack.clicky1.recording"
+        case .defaultSound, .mutedCalls, .custom:
+            return nil
+        }
+    }
+
+    var mutes: Bool {
+        self == .mutedCalls
+    }
+
+    static func inferred(from profile: AppProfile) -> AppSoundRecipe {
+        if profile.mute { return .mutedCalls }
+        switch profile.soundPackId {
+        case nil:
+            return .defaultSound
+        case "com.keythock.pack.creamy2.recording", "com.keythock.pack.creamykeyboard.recording":
+            return .creamyWriting
+        case "com.keythock.pack.clicky1.recording", "com.keythock.pack.clacky1.recording":
+            return .clickyCoding
+        default:
+            return .custom
+        }
+    }
+}
+
+enum PomodoroPhase: String, Codable {
+    case idle
+    case work
+    case breakTime
+
+    var label: String {
+        switch self {
+        case .idle: return "Ready"
+        case .work: return "Focus"
+        case .breakTime: return "Break"
+        }
+    }
+
+    var symbolName: String {
+        switch self {
+        case .idle: return "timer"
+        case .work: return "brain.head.profile"
+        case .breakTime: return "cup.and.saucer"
+        }
+    }
+}
+
 enum PermissionState: String, Codable {
     case notDetermined
     case denied
@@ -95,10 +217,10 @@ enum PermissionState: String, Codable {
 
     var label: String {
         switch self {
-        case .notDetermined: return "Permission needed"
-        case .denied: return "Permission denied"
-        case .approved: return "Permission approved"
-        case .unknownOrBlocked: return "Keyboard events blocked"
+        case .notDetermined: return "Input Monitoring needed"
+        case .denied: return "Input Monitoring denied"
+        case .approved: return "Keyboard access ready"
+        case .unknownOrBlocked: return "Keyboard access blocked"
         }
     }
 }
@@ -108,7 +230,8 @@ enum SettingsTab: String, CaseIterable, Identifiable {
     case soundPacks = "Sound Packs"
     case mixer = "Mixer"
     case keySounds = "Keys"
-    case appProfiles = "App Profiles"
+    case appProfiles = "Recipes"
+    case focus = "Focus"
     case diagnostics = "Diagnostics"
     case privacy = "Privacy"
     case settings = "Settings"
@@ -121,7 +244,8 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .soundPacks: return "waveform"
         case .mixer: return "slider.horizontal.3"
         case .keySounds: return "keyboard"
-        case .appProfiles: return "app.badge"
+        case .appProfiles: return "paintpalette"
+        case .focus: return "timer"
         case .diagnostics: return "stethoscope"
         case .privacy: return "lock.shield"
         case .settings: return "gearshape"
@@ -182,7 +306,7 @@ struct KeyEvent: Equatable {
     let phase: KeyPhase
     let isRepeat: Bool
     let timestamp: TimeInterval
-    let flagsRawValue: UInt64
+    let flagsRawValue: UInt
     let sourceAppBundleId: String?
 }
 
@@ -286,6 +410,72 @@ struct AppProfile: Identifiable, Codable, Equatable {
     var notes: String
 }
 
+struct CustomMixerPreset: Identifiable, Codable, Equatable {
+    var id: String = UUID().uuidString
+    var name: String
+    var createdAt: Date = Date()
+    var masterVolume: Float
+    var pressVolume: Float
+    var releaseVolume: Float
+    var spacebarVolume: Float
+    var modifierVolume: Float
+    var pitchShiftSemitones: Float
+    var pitchVariation: Float
+    var sampleVariation: Bool
+    var samplePlaybackMode: SamplePlaybackMode?
+    var bassBoost: Float
+    var brightness: Float
+    var echoAmount: Float
+    var roomAmount: Float
+    var limiterEnabled: Bool
+    var autoDuckingEnabled: Bool
+    var releaseSoundsEnabled: Bool
+    var modifierSoundsEnabled: Bool
+    var repeatMode: RepeatMode
+    var maxRepeatSoundsPerSecond: Double
+
+    init(name: String, snapshot: SettingsSnapshot) {
+        self.name = name
+        masterVolume = snapshot.masterVolume
+        pressVolume = snapshot.pressVolume
+        releaseVolume = snapshot.releaseVolume
+        spacebarVolume = snapshot.spacebarVolume
+        modifierVolume = snapshot.modifierVolume
+        pitchShiftSemitones = snapshot.pitchShiftSemitones ?? 0
+        pitchVariation = snapshot.pitchVariation
+        sampleVariation = snapshot.sampleVariation
+        samplePlaybackMode = snapshot.resolvedSamplePlaybackMode
+        bassBoost = snapshot.bassBoost
+        brightness = snapshot.brightness
+        echoAmount = snapshot.echoAmount ?? 0
+        roomAmount = snapshot.roomAmount
+        limiterEnabled = snapshot.limiterEnabled
+        autoDuckingEnabled = snapshot.autoDuckingEnabled ?? false
+        releaseSoundsEnabled = snapshot.releaseSoundsEnabled
+        modifierSoundsEnabled = snapshot.modifierSoundsEnabled
+        repeatMode = snapshot.repeatMode
+        maxRepeatSoundsPerSecond = snapshot.maxRepeatSoundsPerSecond
+    }
+}
+
+struct SoundPackImportReport: Identifiable, Equatable {
+    var id: String
+    var packName: String
+    var sampleCount: Int
+    var pressSampleCount: Int
+    var releaseSampleCount: Int
+    var categories: [String]
+    var missingReleaseCategories: [String]
+}
+
+enum SampleAssignment {
+    static func stableIndex(keyCode: Int, sampleCount: Int, seed: Int = 0) -> Int? {
+        guard sampleCount > 0 else { return nil }
+        let remainder = (keyCode &* 31 &+ seed) % sampleCount
+        return remainder >= 0 ? remainder : remainder + sampleCount
+    }
+}
+
 struct SettingsSnapshot: Codable {
     var appEnabled: Bool = true
     var currentPackId: String = "com.keythock.pack.creamy2.recording"
@@ -297,6 +487,8 @@ struct SettingsSnapshot: Codable {
     var pitchShiftSemitones: Float? = 0
     var pitchVariation: Float = 0.02
     var sampleVariation: Bool = true
+    var samplePlaybackMode: SamplePlaybackMode? = .stablePerKey
+    var sampleShuffleSeed: Int? = 0
     var bassBoost: Float = 0
     var brightness: Float = 0
     var echoAmount: Float? = 0
@@ -317,8 +509,15 @@ struct SettingsSnapshot: Codable {
     var quietHoursEndMinutes: Int = 7 * 60
     var quietHoursLowerVolume: Bool = false
     var quietHoursVolume: Float = 0.2
+    var pomodoroWorkMinutes: Int? = 25
+    var pomodoroBreakMinutes: Int? = 5
+    var characterCountdownTarget: Int? = 500
     var temporaryMuteUntil: Date?
     var onboardingCompletedVersion: String?
     var hideBluetoothWarning: Bool = false
     var keySampleOverrides: [String: [String: Int]]?
+
+    var resolvedSamplePlaybackMode: SamplePlaybackMode {
+        samplePlaybackMode ?? (sampleVariation ? .stablePerKey : .singleSample)
+    }
 }

@@ -25,5 +25,5 @@ if [[ "${OPEN_AFTER_INSTALL}" == "1" ]]; then
   fi
 fi
 
-echo "Input Monitoring app path: ${DEST_APP}"
+echo "Installed app path: ${DEST_APP}"
 echo "Bundle ID: ${BUNDLE_ID}"

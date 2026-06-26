@@ -10,10 +10,15 @@ final class AppModel: ObservableObject {
     @Published var transientPulse = false
     @Published var outputWarning: String?
     @Published var lastKeyboardEventDate: Date?
-    @Published var lastKeyboardEventSummary = "No key events yet"
+    @Published var lastKeyboardEventSummary = "No keyboard events observed yet"
     @Published var lastSoundPlayedDate: Date?
     @Published var lastTypingPlaybackDecision = "No typing playback attempted yet"
     @Published var lastTypingPlaybackDecisionDate: Date?
+    @Published var pomodoroPhase: PomodoroPhase = .idle
+    @Published var pomodoroRemainingSeconds = 25 * 60
+    @Published var pomodoroIsRunning = false
+    @Published var characterCountdownRemaining = 500
+    @Published var characterCountdownActive = false
 
     let settings: SettingsStore
     let permissions: PermissionService
@@ -21,13 +26,11 @@ final class AppModel: ObservableObject {
     let audio: AudioEngineService
     let audioActivity: SystemAudioActivityService
     let profileService: ProfileService
-    let hotkeys: HotkeyService
     let debugLog: DebugLogService
 
     private let keyboard = KeyboardEventService()
     private var cancellables: Set<AnyCancellable> = []
-    private var lastRepeatByKey: [Int: TimeInterval] = [:]
-    private var suppressSoundsUntil: Date?
+    private var lastRepeatSoundAt: TimeInterval?
     private var timer: Timer?
     private let creamyRecordingPackId = "com.keythock.pack.creamykeyboard.recording"
     private let creamyRecordingMigrationKey = "migration.selectedCreamyRecordingPack.v3"
@@ -41,9 +44,10 @@ final class AppModel: ObservableObject {
         audio = AudioEngineService()
         audioActivity = SystemAudioActivityService()
         profileService = ProfileService()
-        hotkeys = HotkeyService()
         debugLog = DebugLogService()
         debugLog.append("app.launch pid=\(ProcessInfo.processInfo.processIdentifier) bundle=\(Bundle.main.bundleURL.path) sandbox=\(ProcessInfo.processInfo.environment["APP_SANDBOX_CONTAINER_ID"] ?? "none")")
+        pomodoroRemainingSeconds = settings.pomodoroWorkMinutes * 60
+        characterCountdownRemaining = settings.characterCountdownTarget
 
         selectCreamyRecordingPackOnce()
         selectCreamy2RecordingPackOnce()
@@ -51,7 +55,6 @@ final class AppModel: ObservableObject {
         wireObjectChanges()
         clearPreviewFocusWhenAppDeactivates()
         configureKeyboardListener()
-        configureHotkeys()
         audio.preload(pack: currentPack, settings: settings.snapshot)
         permissions.refresh(listenerIsRunning: keyboard.isRunning)
         keyboard.start()
@@ -67,7 +70,8 @@ final class AppModel: ObservableObject {
     }
 
     var visibleStatus: String {
-        if permissions.state != .approved { return permissions.state.label }
+        if permissions.state != .approved { return "Needs Keyboard Access" }
+        if !listenerState.isRunning { return "Keyboard Listener Off" }
         if let until = settings.temporaryMuteUntil, until > Date() { return "Muted until \(until.formatted(date: .omitted, time: .shortened))" }
         if profileService.isActiveAppMuted() { return "Muted in \(profileService.activeAppName)" }
         if isQuietHoursActive { return "Quiet Hours" }
@@ -76,13 +80,13 @@ final class AppModel: ObservableObject {
     }
 
     var menuBarSymbol: String {
-        if permissions.state != .approved { return "keyboard.badge.ellipsis" }
+        if menuBarHasPermissionIssue { return "keyboard.badge.eye" }
         if !settings.appEnabled || isMutedNow { return "keyboard.badge.eye" }
         return transientPulse ? "waveform" : "keyboard"
     }
 
     var menuBarHasPermissionIssue: Bool {
-        permissions.state != .approved
+        permissions.state != .approved || !listenerState.isRunning
     }
 
     /// The normal keyboard glyph with a small red warning badge overhanging the
@@ -181,7 +185,8 @@ final class AppModel: ObservableObject {
     }
 
     var typingPlaybackStatusText: String {
-        if permissions.state != .approved { return permissions.state.label }
+        if permissions.state != .approved { return "Needs Input Monitoring" }
+        if !listenerState.isRunning { return "Keyboard listener stopped" }
         if !settings.appEnabled { return "KeyThock is off" }
         if let until = settings.temporaryMuteUntil, until > Date() {
             return "Muted until \(until.formatted(date: .omitted, time: .shortened))"
@@ -196,7 +201,7 @@ final class AppModel: ObservableObject {
     }
 
     var typingPlaybackReady: Bool {
-        permissions.state == .approved && !isMutedNow
+        permissions.state == .approved && listenerState.isRunning && !isMutedNow
     }
 
     var echoEnabled: Bool {
@@ -241,12 +246,116 @@ final class AppModel: ObservableObject {
         return current >= start || current < end
     }
 
+    var pomodoroTimeText: String {
+        Self.formatDuration(pomodoroRemainingSeconds)
+    }
+
+    var pomodoroStatusText: String {
+        if pomodoroIsRunning {
+            return "\(pomodoroPhase.label) running"
+        }
+        if pomodoroRemainingSeconds == 0 {
+            return "\(pomodoroPhase.label) complete"
+        }
+        return pomodoroPhase == .idle ? "Ready to focus" : "\(pomodoroPhase.label) paused"
+    }
+
+    var pomodoroProgress: Double {
+        let total: Int
+        switch pomodoroPhase {
+        case .breakTime:
+            total = max(1, settings.pomodoroBreakMinutes * 60)
+        case .idle, .work:
+            total = max(1, settings.pomodoroWorkMinutes * 60)
+        }
+        return 1 - (Double(pomodoroRemainingSeconds) / Double(total))
+    }
+
+    var characterCountdownText: String {
+        "\(characterCountdownRemaining) left"
+    }
+
+    var characterCountdownStatusText: String {
+        if characterCountdownRemaining == 0 {
+            return "Goal complete"
+        }
+        return characterCountdownActive ? "Counting typed characters" : "Paused"
+    }
+
+    var characterCountdownProgress: Double {
+        let target = max(1, settings.characterCountdownTarget)
+        return 1 - (Double(characterCountdownRemaining) / Double(target))
+    }
+
+    var focusMenuStatusText: String {
+        if pomodoroIsRunning || pomodoroPhase != .idle {
+            return "\(pomodoroPhase.label) \(pomodoroTimeText)"
+        }
+        if characterCountdownActive {
+            return "\(characterCountdownRemaining) chars"
+        }
+        return "Ready"
+    }
+
+    var focusMenuSymbol: String {
+        if pomodoroIsRunning || pomodoroPhase != .idle {
+            return pomodoroPhase.symbolName
+        }
+        if characterCountdownActive {
+            return "textformat.123"
+        }
+        return "checkmark.shield"
+    }
+
     func selectPack(_ pack: SoundPack) {
         resetMorseQueue()
         settings.currentPackId = pack.id
         settings.pitchVariation = pack.pitchVariationDefault
-        settings.sampleVariation = pack.sampleVariationDefault
+        settings.samplePlaybackMode = pack.sampleVariationDefault ? .stablePerKey : .singleSample
         audio.preload(pack: pack, settings: settings.snapshot)
+    }
+
+    func startPomodoroWork() {
+        pomodoroPhase = .work
+        pomodoroRemainingSeconds = max(1, settings.pomodoroWorkMinutes) * 60
+        pomodoroIsRunning = true
+    }
+
+    func startPomodoroBreak() {
+        pomodoroPhase = .breakTime
+        pomodoroRemainingSeconds = max(1, settings.pomodoroBreakMinutes) * 60
+        pomodoroIsRunning = true
+    }
+
+    func pausePomodoro() {
+        pomodoroIsRunning = false
+    }
+
+    func resumePomodoro() {
+        guard pomodoroPhase != .idle, pomodoroRemainingSeconds > 0 else { return }
+        pomodoroIsRunning = true
+    }
+
+    func resetPomodoro() {
+        pomodoroPhase = .idle
+        pomodoroRemainingSeconds = max(1, settings.pomodoroWorkMinutes) * 60
+        pomodoroIsRunning = false
+    }
+
+    func resetCharacterCountdown() {
+        characterCountdownRemaining = max(1, settings.characterCountdownTarget)
+        characterCountdownActive = false
+    }
+
+    func startCharacterCountdown() {
+        if characterCountdownRemaining <= 0 {
+            resetCharacterCountdown()
+        }
+        characterCountdownActive = true
+    }
+
+    func pauseCharacterCountdown() {
+        characterCountdownActive = false
     }
 
     func selectPackAndPreview(_ pack: SoundPack) {
@@ -284,16 +393,23 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func previewKey(category: KeyCategory = .alpha) {
+    func previewKey(category: KeyCategory = .alpha, keyCode: Int? = nil) {
+        let pack = packs.pack(with: audio.activePackId ?? settings.currentPackId)
+        let sampleIndexOverride = keyCode.flatMap {
+            settings.keySampleOverride(packId: pack.id, keyCode: $0)
+                ?? automaticSampleIndex(keyCode: $0, category: category, pack: pack)
+        }
+        let shouldRandomize = sampleIndexOverride == nil && settings.samplePlaybackMode == .randomEveryPress
+
         if audio.play(SoundPlaybackRequest(
-            packId: audio.activePackId ?? settings.currentPackId,
+            packId: pack.id,
             keyCategory: category,
             phase: .down,
             volume: settings.masterVolume * autoDuckingMultiplier(),
             pitchShiftSemitones: settings.pitchShiftSemitones,
             pitchVariation: settings.pitchVariation,
-            sampleVariation: settings.sampleVariation,
-            sampleIndexOverride: nil,
+            sampleVariation: shouldRandomize,
+            sampleIndexOverride: sampleIndexOverride,
             timestamp: Date().timeIntervalSince1970,
             appProfileId: nil
         )) {
@@ -308,6 +424,20 @@ final class AppModel: ObservableObject {
 
     func sampleCount(for category: KeyCategory, pack: SoundPack? = nil) -> Int {
         (pack ?? currentPack).sampleCount(for: category)
+    }
+
+    func automaticSampleIndex(keyCode: Int, category: KeyCategory, pack: SoundPack? = nil) -> Int? {
+        guard settings.samplePlaybackMode == .stablePerKey else { return nil }
+        let sampleCount = (pack ?? currentPack).sampleCount(for: category)
+        return SampleAssignment.stableIndex(
+            keyCode: keyCode,
+            sampleCount: sampleCount,
+            seed: settings.sampleShuffleSeed
+        )
+    }
+
+    func shuffleAutomaticSamples() {
+        settings.shuffleAutomaticSamples()
     }
 
     func cycleKeySample(keyCode: Int, category: KeyCategory) {
@@ -336,13 +466,13 @@ final class AppModel: ObservableObject {
 
     func requestPermission() {
         permissions.requestAccess()
-        if permissions.state == .approved {
+        permissions.refresh(listenerIsRunning: keyboard.isRunning)
+        if !keyboard.isRunning {
             keyboard.restart()
         }
     }
 
     func openSettingsForPermission() {
-        refreshPermissionStatus()
         permissions.openInputMonitoringSettings()
     }
 
@@ -376,6 +506,7 @@ final class AppModel: ObservableObject {
             let pack = try packs.importPack(from: url)
             selectPack(pack)
         } catch {
+            packs.importReport = nil
             packs.importMessage = error.localizedDescription
         }
     }
@@ -383,18 +514,7 @@ final class AppModel: ObservableObject {
     func resetLocalData() {
         settings.resetAll()
         profileService.resetDefaults()
-        hotkeys.setEnabled(settings.globalMuteHotkeyEnabled, hotkey: settings.globalMuteHotkey)
         audio.preload(pack: currentPack, settings: settings.snapshot)
-    }
-
-    func setGlobalMuteHotkeyEnabled(_ enabled: Bool) {
-        settings.globalMuteHotkeyEnabled = enabled
-        hotkeys.setEnabled(enabled, hotkey: settings.globalMuteHotkey)
-    }
-
-    func setGlobalMuteHotkey(_ hotkey: GlobalMuteHotkey) {
-        settings.globalMuteHotkey = hotkey
-        hotkeys.setEnabled(settings.globalMuteHotkeyEnabled, hotkey: hotkey)
     }
 
     func setEchoEnabled(_ enabled: Bool) {
@@ -416,17 +536,6 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func toggleSoundsFromHotkey() {
-        suppressSoundsUntil = Date().addingTimeInterval(0.3)
-        if settings.appEnabled && settings.temporaryMuteUntil == nil {
-            settings.appEnabled = false
-        } else {
-            settings.clearTemporaryMute()
-            settings.appEnabled = true
-        }
-        pulse()
-    }
-
     private func playConfiguredKey(pack: SoundPack, keyCode: Int, category: KeyCategory, sampleIndex: Int?) {
         if audio.activePackId != pack.id {
             audio.preload(pack: pack, settings: settings.snapshot)
@@ -438,6 +547,9 @@ final class AppModel: ObservableObject {
             }
             return
         }
+        let effectiveSampleIndex = sampleIndex ?? automaticSampleIndex(keyCode: keyCode, category: category, pack: pack)
+        let shouldRandomize = effectiveSampleIndex == nil && settings.samplePlaybackMode == .randomEveryPress
+
         if audio.play(SoundPlaybackRequest(
             packId: pack.id,
             keyCategory: category,
@@ -445,8 +557,8 @@ final class AppModel: ObservableObject {
             volume: effectiveVolume(category: category, phase: .down, profile: nil),
             pitchShiftSemitones: settings.pitchShiftSemitones,
             pitchVariation: settings.pitchVariation,
-            sampleVariation: sampleIndex == nil ? settings.sampleVariation : false,
-            sampleIndexOverride: sampleIndex,
+            sampleVariation: shouldRandomize,
+            sampleIndexOverride: effectiveSampleIndex,
             timestamp: Date().timeIntervalSince1970,
             appProfileId: nil
         )) {
@@ -504,7 +616,7 @@ final class AppModel: ObservableObject {
                 guard let self else { return }
                 self.listenerState = state
                 self.permissions.refresh(listenerIsRunning: state.isRunning)
-                self.debugLog.append("keyboard.state \(self.listenerStatusText) permission=\(self.permissions.state.rawValue)")
+                self.debugLog.append("keyboard.state \(self.listenerStatusText)")
             }
         }
         keyboard.onEvent = { [weak self] event in
@@ -512,13 +624,6 @@ final class AppModel: ObservableObject {
                 self?.handle(event)
             }
         }
-    }
-
-    private func configureHotkeys() {
-        hotkeys.onToggle = { [weak self] in
-            self?.toggleSoundsFromHotkey()
-        }
-        hotkeys.setEnabled(settings.globalMuteHotkeyEnabled, hotkey: settings.globalMuteHotkey)
     }
 
     private func selectCreamyRecordingPackOnce() {
@@ -539,29 +644,12 @@ final class AppModel: ObservableObject {
     }
 
     private func handle(_ event: KeyEvent) {
-        debugLog.append("app.handle key=\(event.keyCode) category=\(event.category.rawValue) phase=\(event.phase.rawValue) repeat=\(event.isRepeat)")
-        // Modifier flag changes (Shift/Ctrl/Cmd/Opt) reach us through the global-monitor
-        // fallback even without Input Monitoring permission, so they don't prove access.
-        // Only a real keyDown/keyUp — which macOS withholds without the grant — counts.
-        if event.phase != .modifierChanged {
-            permissions.markKeyboardEventObserved()
-        }
         if event.phase == .down || event.phase == .modifierChanged {
             lastKeyboardEventDate = Date()
-            lastKeyboardEventSummary = "\(event.category.displayName) key \(event.keyCode)"
+            lastKeyboardEventSummary = "Keyboard event received"
+            permissions.markKeyboardEventObserved()
         }
-        if isTypingPreviewFocused && event.sourceAppBundleId == Bundle.main.bundleIdentifier {
-            noteTypingPlayback("Skipped: in-app preview pad handled this key")
-            return
-        }
-        guard !isGlobalMuteHotkeyEvent(event) else {
-            noteTypingPlayback("Skipped: mute shortcut")
-            return
-        }
-        if let suppressSoundsUntil, suppressSoundsUntil > Date() {
-            noteTypingPlayback("Skipped: mute shortcut settling")
-            return
-        }
+        countCharacterIfNeeded(event)
         guard shouldPlayRepeat(event) else {
             noteTypingPlayback("Skipped: repeat limit")
             return
@@ -595,15 +683,17 @@ final class AppModel: ObservableObject {
         if MorseCode.isMorsePack(pack) {
             if playMorseKey(event.keyCode, pack: pack, volume: volume, appProfileId: activeProfile?.id) {
                 markSoundPlayed()
-                noteTypingPlayback("Played \(pack.name) Morse for key \(event.keyCode)")
+                noteTypingPlayback("Played \(pack.name) Morse")
                 pulse()
             } else {
-                noteTypingPlayback("Skipped: no Morse mapping for key \(event.keyCode)")
+                noteTypingPlayback("Skipped: no Morse mapping")
             }
             return
         }
 
-        let sampleIndexOverride = settings.keySampleOverride(packId: pack.id, keyCode: event.keyCode)
+        let explicitSampleIndex = settings.keySampleOverride(packId: pack.id, keyCode: event.keyCode)
+        let sampleIndexOverride = explicitSampleIndex ?? automaticSampleIndex(for: event, pack: pack)
+        let shouldRandomize = sampleIndexOverride == nil && settings.samplePlaybackMode == .randomEveryPress
 
         let didPlay = audio.play(SoundPlaybackRequest(
             packId: pack.id,
@@ -612,7 +702,7 @@ final class AppModel: ObservableObject {
             volume: volume,
             pitchShiftSemitones: settings.pitchShiftSemitones,
             pitchVariation: settings.pitchVariation,
-            sampleVariation: sampleIndexOverride == nil ? settings.sampleVariation : false,
+            sampleVariation: shouldRandomize,
             sampleIndexOverride: sampleIndexOverride,
             timestamp: event.timestamp,
             appProfileId: activeProfile?.id
@@ -620,7 +710,7 @@ final class AppModel: ObservableObject {
 
         if didPlay {
             markSoundPlayed()
-            noteTypingPlayback("Played \(pack.name) for \(event.category.displayName)")
+            noteTypingPlayback("Played \(pack.name)")
             pulse()
         } else {
             noteTypingPlayback("Skipped: audio sample was not scheduled")
@@ -634,7 +724,27 @@ final class AppModel: ObservableObject {
     private func noteTypingPlayback(_ message: String) {
         lastTypingPlaybackDecision = message
         lastTypingPlaybackDecisionDate = Date()
-        debugLog.append("playback.decision \(message)")
+    }
+
+    private func countCharacterIfNeeded(_ event: KeyEvent) {
+        guard characterCountdownActive,
+              characterCountdownRemaining > 0,
+              event.phase == .down,
+              isTextLikeCharacter(event) else { return }
+        characterCountdownRemaining = max(0, characterCountdownRemaining - 1)
+        if characterCountdownRemaining == 0 {
+            characterCountdownActive = false
+            NSSound.beep()
+        }
+    }
+
+    private func isTextLikeCharacter(_ event: KeyEvent) -> Bool {
+        switch event.category {
+        case .alpha, .number, .punctuation, .space, .enter, .tab, .numpad:
+            return true
+        case .backspace, .escape, .arrow, .modifier, .function, .unknown:
+            return false
+        }
     }
 
     private func shouldPlayRepeat(_ event: KeyEvent) -> Bool {
@@ -643,25 +753,24 @@ final class AppModel: ObservableObject {
         case .all, .reduced:
             let now = Date().timeIntervalSince1970
             let minimumGap = 1.0 / max(1, settings.maxRepeatSoundsPerSecond)
-            if let last = lastRepeatByKey[event.keyCode], now - last < minimumGap {
+            if let last = lastRepeatSoundAt, now - last < minimumGap {
                 return false
             }
-            lastRepeatByKey[event.keyCode] = now
+            lastRepeatSoundAt = now
             return true
         case .firstOnly, .off:
             return false
         }
     }
 
-    private func isGlobalMuteHotkeyEvent(_ event: KeyEvent) -> Bool {
-        let hotkey = settings.globalMuteHotkey
-        guard settings.globalMuteHotkeyEnabled, event.keyCode == hotkey.keyCode else { return false }
-        let flags = CGEventFlags(rawValue: event.flagsRawValue)
-        if hotkey.requiresControl && !flags.contains(.maskControl) { return false }
-        if hotkey.requiresOption && !flags.contains(.maskAlternate) { return false }
-        if hotkey.requiresCommand && !flags.contains(.maskCommand) { return false }
-        if hotkey.requiresShift && !flags.contains(.maskShift) { return false }
-        return true
+    private func automaticSampleIndex(for event: KeyEvent, pack: SoundPack) -> Int? {
+        guard settings.samplePlaybackMode == .stablePerKey else { return nil }
+        let sampleCount = pack.sampleCount(for: event.category, phase: event.phase.samplePhase)
+        return SampleAssignment.stableIndex(
+            keyCode: event.keyCode,
+            sampleCount: sampleCount,
+            seed: settings.sampleShuffleSeed
+        )
     }
 
     private func effectiveVolume(category: KeyCategory, phase: KeyPhase, profile: AppProfile?) -> Float {
@@ -691,6 +800,7 @@ final class AppModel: ObservableObject {
     private func playbackSnapshot() -> SettingsSnapshot {
         var snapshot = settings.snapshot
         snapshot.masterVolume *= autoDuckingMultiplier()
+        snapshot.sampleVariation = settings.samplePlaybackMode == .randomEveryPress
         return snapshot
     }
 
@@ -707,8 +817,7 @@ final class AppModel: ObservableObject {
             packs.objectWillChange.eraseToAnyPublisher(),
             audio.objectWillChange.eraseToAnyPublisher(),
             audioActivity.objectWillChange.eraseToAnyPublisher(),
-            profileService.objectWillChange.eraseToAnyPublisher(),
-            hotkeys.objectWillChange.eraseToAnyPublisher()
+            profileService.objectWillChange.eraseToAnyPublisher()
         ].forEach { publisher in
             publisher
                 .receive(on: RunLoop.main)
@@ -739,6 +848,27 @@ final class AppModel: ObservableObject {
             audioActivity.clear()
         }
         refreshPermissionStatus()
+        tickPomodoro()
+    }
+
+    private func tickPomodoro() {
+        guard pomodoroIsRunning else { return }
+        if pomodoroRemainingSeconds > 0 {
+            pomodoroRemainingSeconds -= 1
+        }
+        guard pomodoroRemainingSeconds <= 0 else { return }
+        pomodoroIsRunning = false
+        NSSound.beep()
+        switch pomodoroPhase {
+        case .work:
+            pomodoroPhase = .breakTime
+            pomodoroRemainingSeconds = max(1, settings.pomodoroBreakMinutes) * 60
+        case .breakTime:
+            pomodoroPhase = .idle
+            pomodoroRemainingSeconds = max(1, settings.pomodoroWorkMinutes) * 60
+        case .idle:
+            pomodoroRemainingSeconds = max(1, settings.pomodoroWorkMinutes) * 60
+        }
     }
 
     private func pulse() {
@@ -747,5 +877,12 @@ final class AppModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
             self?.transientPulse = false
         }
+    }
+
+    private static func formatDuration(_ seconds: Int) -> String {
+        let clamped = max(0, seconds)
+        let minutes = clamped / 60
+        let remainder = clamped % 60
+        return String(format: "%02d:%02d", minutes, remainder)
     }
 }

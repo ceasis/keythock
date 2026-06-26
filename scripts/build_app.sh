@@ -15,10 +15,9 @@ if [[ "${SIGNING_PROFILE}" == "appstore" && -z "${ENTITLEMENTS}" ]]; then
   ENTITLEMENTS="Resources/KeyThock.entitlements"
 fi
 
-# Stable code-signing identity so TCC grants (Input Monitoring) survive rebuilds.
-# Ad-hoc signatures (--sign -) get a new hash every build and silently drop the
-# permission. Override with KEYTHOCK_SIGNING_IDENTITY; auto-detects an Apple
-# Development cert; falls back to ad-hoc only if no identity is available.
+# Stable code-signing identity for repeatable local builds. Override with
+# KEYTHOCK_SIGNING_IDENTITY; auto-detects an Apple Development cert and falls
+# back to ad-hoc only if no identity is available.
 SIGNING_IDENTITY="${KEYTHOCK_SIGNING_IDENTITY:-}"
 if [[ -z "${SIGNING_IDENTITY}" ]]; then
   SIGNING_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null | awk '/Apple Development/ {print $2; exit}')"
@@ -87,7 +86,7 @@ fi
 echo "Built ${APP_DIR}"
 echo "Signing profile: ${SIGNING_PROFILE}"
 if [[ "${SIGNING_IDENTITY}" == "-" ]]; then
-  echo "Signing identity: ad-hoc (TCC grants will NOT survive rebuilds)"
+  echo "Signing identity: ad-hoc"
 else
   echo "Signing identity: ${SIGNING_IDENTITY}"
 fi

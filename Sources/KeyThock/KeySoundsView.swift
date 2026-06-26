@@ -30,6 +30,14 @@ struct KeySoundsView: View {
                         }
 
                         Button {
+                            model.shuffleAutomaticSamples()
+                        } label: {
+                            Label("Shuffle Auto", systemImage: "shuffle")
+                        }
+                        .disabled(model.settings.samplePlaybackMode != .stablePerKey)
+                        .help("Shuffle automatic per-key sample choices")
+
+                        Button {
                             model.clearConfiguredKey(keyCode: selectedKey.keyCode)
                         } label: {
                             Label("Clear Key", systemImage: "xmark.circle")
@@ -81,7 +89,17 @@ struct KeySoundsView: View {
 
     private func assignmentText(for key: KeyboardKeyDefinition) -> String {
         guard let sampleIndex = model.assignedSampleIndex(keyCode: key.keyCode) else {
-            return "Auto"
+            switch model.settings.samplePlaybackMode {
+            case .stablePerKey:
+                guard let autoIndex = model.automaticSampleIndex(keyCode: key.keyCode, category: key.category) else {
+                    return "Auto"
+                }
+                return "Auto S\(autoIndex + 1)"
+            case .singleSample:
+                return "S1"
+            case .randomEveryPress:
+                return "Rand"
+            }
         }
         return "S\(sampleIndex + 1)"
     }
@@ -90,7 +108,17 @@ struct KeySoundsView: View {
         let count = model.sampleCount(for: key.category)
         guard count > 0 else { return "No press samples in this pack" }
         guard let sampleIndex = model.assignedSampleIndex(keyCode: key.keyCode) else {
-            return "Auto from \(count) samples"
+            switch model.settings.samplePlaybackMode {
+            case .stablePerKey:
+                guard let autoIndex = model.automaticSampleIndex(keyCode: key.keyCode, category: key.category) else {
+                    return "Auto from \(count) samples"
+                }
+                return "Auto sample \(autoIndex + 1) of \(count)"
+            case .singleSample:
+                return "Single sample 1 of \(count)"
+            case .randomEveryPress:
+                return "Random across \(count) samples"
+            }
         }
         return "Sample \(min(sampleIndex, count - 1) + 1) of \(count)"
     }

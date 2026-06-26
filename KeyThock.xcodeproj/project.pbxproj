@@ -19,7 +19,7 @@
 		656FFA8EA77FAD4D254491B7 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7200AEAE075AD54301ADF57B /* PermissionService.swift */; };
 		7816194A268EDADABDDC0344 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C13B3C27524F565F9FDE3AC /* AppModel.swift */; };
 		82A780FC978660306B0886CE /* KeyboardEventService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19DCAEB17C7EDEFE817A51A9 /* KeyboardEventService.swift */; };
-		9D34223C6BC5DEC7630DF74B /* HotkeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FEBA62ADC75C60F72EBE732 /* HotkeyService.swift */; };
+		87A4326501C99455C6063B9E /* KeyThockLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17D5DDBFFEB6AEDF496495AF /* KeyThockLogicTests.swift */; };
 		AAD1748EA5E7B281E5240A85 /* KeyThockApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925EAB83A1284313E96D4913 /* KeyThockApp.swift */; };
 		B01EB0AB436D74F48AE2E71C /* SystemAudioActivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CCE7C536F9CD7FB1F549D61 /* SystemAudioActivityService.swift */; };
 		C18162DFB2141D13907F27E8 /* KeyClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0495451658D80C813224F5B9 /* KeyClassifier.swift */; };
@@ -28,16 +28,27 @@
 		FB4BC711D5722D1607455689 /* MorseCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA09A8F7D7DADFBCF2DFCFD8 /* MorseCode.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		B631BB4C4AE080CFE1A11462 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F6C47A4C83011A032736C6EF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E6AF4D943C261E140B01F0DB;
+			remoteInfo = KeyThock;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		0495451658D80C813224F5B9 /* KeyClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyClassifier.swift; sourceTree = "<group>"; };
 		0D09A7FC898A194CE5B09FF4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		102CBA459B168BFFE23F8F5E /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		17D5DDBFFEB6AEDF496495AF /* KeyThockLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyThockLogicTests.swift; sourceTree = "<group>"; };
 		19DCAEB17C7EDEFE817A51A9 /* KeyboardEventService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardEventService.swift; sourceTree = "<group>"; };
 		23DBAD711700D7197B1386E6 /* SoundPackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundPackManager.swift; sourceTree = "<group>"; };
-		2FEBA62ADC75C60F72EBE732 /* HotkeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyService.swift; sourceTree = "<group>"; };
 		335A9455FEDF1FA445F39A25 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		3C13B3C27524F565F9FDE3AC /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		4CCE7C536F9CD7FB1F549D61 /* SystemAudioActivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioActivityService.swift; sourceTree = "<group>"; };
+		4DD428F27B05441B0A34A17C /* KeyThockTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KeyThockTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6360E60CDC5AFC3DB2462DDC /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		66F097A3EE9B11BBA4058E46 /* KeyThock.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KeyThock.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7200AEAE075AD54301ADF57B /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionService.swift; sourceTree = "<group>"; };
@@ -56,6 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				66F097A3EE9B11BBA4058E46 /* KeyThock.app */,
+				4DD428F27B05441B0A34A17C /* KeyThockTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,7 +78,6 @@
 				3C13B3C27524F565F9FDE3AC /* AppModel.swift */,
 				CE381E61B01574D12D9A81AF /* AudioEngineService.swift */,
 				F6AB6AB2422D1C8207E5A233 /* DebugLogService.swift */,
-				2FEBA62ADC75C60F72EBE732 /* HotkeyService.swift */,
 				19DCAEB17C7EDEFE817A51A9 /* KeyboardEventService.swift */,
 				0495451658D80C813224F5B9 /* KeyClassifier.swift */,
 				7B9A03AAD140CBAC50DCF05D /* KeySoundsView.swift */,
@@ -84,6 +95,15 @@
 			path = Sources/KeyThock;
 			sourceTree = "<group>";
 		};
+		AF8727D1432CF0AB7B1D6D23 /* KeyThockTests */ = {
+			isa = PBXGroup;
+			children = (
+				17D5DDBFFEB6AEDF496495AF /* KeyThockLogicTests.swift */,
+			);
+			name = KeyThockTests;
+			path = Tests/KeyThockTests;
+			sourceTree = "<group>";
+		};
 		B1699789A8EDFA9D0C313B2D /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -98,6 +118,7 @@
 			children = (
 				EB07F857DB6E35633EA62DC7 /* SoundPacks */,
 				762CF8AB5C84F203104549E7 /* KeyThock */,
+				AF8727D1432CF0AB7B1D6D23 /* KeyThockTests */,
 				E22B12DBAFBDCF9CCA964708 /* Resources */,
 				B1699789A8EDFA9D0C313B2D /* Resources */,
 				2A38AF1065BC5F779C5B2179 /* Products */,
@@ -115,6 +136,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		75C83954B26CA12DC94CBE35 /* KeyThockTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 63A3FEE5DDDBEA602785B178 /* Build configuration list for PBXNativeTarget "KeyThockTests" */;
+			buildPhases = (
+				4075432534D50868FBE86F5F /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				804DC7C22E7B1013339AEC8C /* PBXTargetDependency */,
+			);
+			name = KeyThockTests;
+			packageProductDependencies = (
+			);
+			productName = KeyThockTests;
+			productReference = 4DD428F27B05441B0A34A17C /* KeyThockTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		E6AF4D943C261E140B01F0DB /* KeyThock */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E17532B478FDA88E4B25642F /* Build configuration list for PBXNativeTarget "KeyThock" */;
@@ -142,6 +181,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					75C83954B26CA12DC94CBE35 = {
+						DevelopmentTeam = TDXJZR8KA3;
+						ProvisioningStyle = Automatic;
+					};
 					E6AF4D943C261E140B01F0DB = {
 						DevelopmentTeam = TDXJZR8KA3;
 						ProvisioningStyle = Automatic;
@@ -163,6 +206,7 @@
 			projectRoot = "";
 			targets = (
 				E6AF4D943C261E140B01F0DB /* KeyThock */,
+				75C83954B26CA12DC94CBE35 /* KeyThockTests */,
 			);
 		};
 /* End PBXProject section */
@@ -181,6 +225,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4075432534D50868FBE86F5F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				87A4326501C99455C6063B9E /* KeyThockLogicTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DA731A6EFB75A50F7C67E032 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -188,7 +240,6 @@
 				7816194A268EDADABDDC0344 /* AppModel.swift in Sources */,
 				602F1A0CEAFFCFC87293B2AB /* AudioEngineService.swift in Sources */,
 				427E084CE577973016AD51CB /* DebugLogService.swift in Sources */,
-				9D34223C6BC5DEC7630DF74B /* HotkeyService.swift in Sources */,
 				C18162DFB2141D13907F27E8 /* KeyClassifier.swift in Sources */,
 				22D8D1DF63A2E27F02101CA5 /* KeySoundsView.swift in Sources */,
 				AAD1748EA5E7B281E5240A85 /* KeyThockApp.swift in Sources */,
@@ -206,7 +257,51 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		804DC7C22E7B1013339AEC8C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E6AF4D943C261E140B01F0DB /* KeyThock */;
+			targetProxy = B631BB4C4AE080CFE1A11462 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		1BE3C92F756D84E4D55735BC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.keythock.app.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KeyThock.app/Contents/MacOS/KeyThock";
+			};
+			name = Debug;
+		};
+		24B03D339E7A0E5FF3644A92 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.keythock.app.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KeyThock.app/Contents/MacOS/KeyThock";
+			};
+			name = Release;
+		};
 		3E4F53F73D4EBCA70733EB8B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -382,6 +477,15 @@
 			buildConfigurations = (
 				54688BC9D89228DD813E8F1D /* Debug */,
 				FD3B35DE6D9C34EA0CFC67D2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		63A3FEE5DDDBEA602785B178 /* Build configuration list for PBXNativeTarget "KeyThockTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1BE3C92F756D84E4D55735BC /* Debug */,
+				24B03D339E7A0E5FF3644A92 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

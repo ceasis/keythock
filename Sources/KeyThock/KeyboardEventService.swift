@@ -2,6 +2,14 @@ import ApplicationServices
 import AppKit
 import Foundation
 
+/// Listens for keyboard events globally using a listen-only `CGEventTap`.
+///
+/// Important: this uses `CGEventTap` with `.listenOnly`, which is gated by the
+/// **Input Monitoring** privilege (`CGPreflightListenEventAccess` /
+/// `CGRequestListenEventAccess`) and is available to sandboxed Mac App Store
+/// apps. Do NOT switch to `NSEvent.addGlobalMonitorForEvents`: that API requires
+/// the **Accessibility** privilege, is unavailable in the sandbox, and is what
+/// caused the App Store 2.4.5 rejection.
 final class KeyboardEventService {
     enum ListenerState: Equatable {
         case stopped
@@ -15,8 +23,7 @@ final class KeyboardEventService {
 
     private var eventTaps: [CFMachPort] = []
     private var runLoopSources: [CFRunLoopSource] = []
-    private var globalMonitor: Any?
-    private var lastDeliveredByKeyPhase: [DeliveredEventSignature: TimeInterval] = [:]
+    private var recentDeliveredEvents: [DeliveredEventSignature: TimeInterval] = [:]
     private(set) var state: ListenerState = .stopped {
         didSet { onStateChange?(state) }
     }
@@ -27,7 +34,7 @@ final class KeyboardEventService {
 
     func start() {
         stop()
-        onDebug?("keyboard.start")
+        onDebug?("keyboard.global.start")
 
         let mask = CGEventMask(1 << CGEventType.keyDown.rawValue)
             | CGEventMask(1 << CGEventType.keyUp.rawValue)
@@ -55,8 +62,7 @@ final class KeyboardEventService {
                 continue
             }
 
-            let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-            if let source {
+            if let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) {
                 CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
                 runLoopSources.append(source)
             }
@@ -71,7 +77,6 @@ final class KeyboardEventService {
             return
         }
 
-        installGlobalMonitorFallback()
         state = .running
     }
 
@@ -82,13 +87,9 @@ final class KeyboardEventService {
         for source in runLoopSources {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
         }
-        if let globalMonitor {
-            NSEvent.removeMonitor(globalMonitor)
-        }
         eventTaps = []
         runLoopSources = []
-        globalMonitor = nil
-        lastDeliveredByKeyPhase = [:]
+        recentDeliveredEvents = [:]
         state = .stopped
     }
 
@@ -111,7 +112,6 @@ final class KeyboardEventService {
             return
         }
 
-        let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
         let phase: KeyPhase
         switch type {
         case .keyDown:
@@ -124,48 +124,15 @@ final class KeyboardEventService {
             return
         }
 
-        let sourceApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
         let keyEvent = KeyEvent(
             keyCode: keyCode,
             category: phase == .modifierChanged ? .modifier : KeyClassifier.classify(keyCode: keyCode),
             phase: phase,
             isRepeat: event.getIntegerValueField(.keyboardEventAutorepeat) != 0,
             timestamp: event.timestamp.seconds,
-            flagsRawValue: event.flags.rawValue,
-            sourceAppBundleId: sourceApp
-        )
-        deliver(keyEvent)
-    }
-
-    private func installGlobalMonitorFallback() {
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) { [weak self] event in
-            self?.receive(event: event)
-        }
-    }
-
-    private func receive(event: NSEvent) {
-        let phase: KeyPhase
-        switch event.type {
-        case .keyDown:
-            phase = .down
-        case .keyUp:
-            phase = .up
-        case .flagsChanged:
-            phase = .modifierChanged
-        default:
-            return
-        }
-
-        let keyCode = Int(event.keyCode)
-        let sourceApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        let keyEvent = KeyEvent(
-            keyCode: keyCode,
-            category: phase == .modifierChanged ? .modifier : KeyClassifier.classify(keyCode: keyCode),
-            phase: phase,
-            isRepeat: event.isARepeat,
-            timestamp: event.timestamp,
-            flagsRawValue: Self.cgFlags(from: event.modifierFlags).rawValue,
-            sourceAppBundleId: sourceApp
+            flagsRawValue: UInt(event.flags.rawValue),
+            sourceAppBundleId: NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         )
         deliver(keyEvent)
     }
@@ -173,22 +140,14 @@ final class KeyboardEventService {
     private func deliver(_ keyEvent: KeyEvent) {
         let signature = DeliveredEventSignature(keyCode: keyEvent.keyCode, phase: keyEvent.phase)
         let now = ProcessInfo.processInfo.systemUptime
-        if let lastDeliveredAt = lastDeliveredByKeyPhase[signature],
+        recentDeliveredEvents = recentDeliveredEvents.filter { now - $0.value < 0.2 }
+        if let lastDeliveredAt = recentDeliveredEvents[signature],
            now - lastDeliveredAt < 0.045 {
             return
         }
-        lastDeliveredByKeyPhase[signature] = now
-        onDebug?("keyboard.event key=\(keyEvent.keyCode) phase=\(keyEvent.phase.rawValue) repeat=\(keyEvent.isRepeat) app=\(keyEvent.sourceAppBundleId ?? "unknown")")
+        recentDeliveredEvents[signature] = now
+        onDebug?("keyboard.event phase=\(keyEvent.phase.rawValue) repeat=\(keyEvent.isRepeat) app=\(keyEvent.sourceAppBundleId ?? "unknown")")
         onEvent?(keyEvent)
-    }
-
-    private static func cgFlags(from flags: NSEvent.ModifierFlags) -> CGEventFlags {
-        var result = CGEventFlags()
-        if flags.contains(.shift) { result.insert(.maskShift) }
-        if flags.contains(.control) { result.insert(.maskControl) }
-        if flags.contains(.option) { result.insert(.maskAlternate) }
-        if flags.contains(.command) { result.insert(.maskCommand) }
-        return result
     }
 }
 

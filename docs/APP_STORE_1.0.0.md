@@ -46,20 +46,22 @@ Make your Mac keyboard sound creamy, clacky, thocky, bubbly, or fully custom wit
 
 ## Description
 
-KeyThock adds satisfying mechanical keyboard sounds to your Mac.
+KeyThock adds satisfying mechanical keyboard sounds to your Mac while you type in your normal apps.
 
 Choose from recorded keyboard sound packs, tune the feel with a simple mixer, and assign individual samples to specific keys. Want Space to sound deeper than A, or Enter to hit differently from the rest of the board? Open the Keys editor, click a key, and cycle through the samples in the active pack until it feels right.
 
-Everything runs locally on your Mac. KeyThock uses macOS Input Monitoring only to detect key press timing and key category for sound playback. It does not store what you type, reconstruct words, send keystrokes to a server, read your clipboard, or take screenshots.
+Everything runs locally on your Mac. KeyThock uses macOS Input Monitoring only to detect key press timing and key identity for immediate local sound playback. It does not store what you type, reconstruct words, send keystrokes to a server, read your clipboard, or take screenshots.
 
 Features:
-- Recorded sound packs including creamy, clacky, thocky, bubble, normal, plastic, marbly, clicky, and poppy tones
+- Recorded sound packs including creamy, clacky, thocky, bubble, normal, plastic, marbly, clicky, poppy, typewriter, and Morse tones
+- System-wide typing sounds while using normal Mac apps
 - Per-key sample assignment with a full keyboard editor
+- Per-app sound recipes for writing apps, code editors, and call apps
+- Pomodoro focus timer and private typed-character countdown
 - Mixer presets for balanced, soft, deep, crisp, and calm typing
-- Pitch, bass, brightness, room, repeat, release, and modifier controls
-- App profiles for muting or changing sounds in specific apps
-- Diagnostics for checking audio output, Input Monitoring, and keyboard listener status
-- Menu bar controls for quick preview, muting, and sound switching
+- Pitch, bass, brightness, echo, reverb, ducking, repeat, release, and modifier controls
+- Diagnostics for checking audio output, Input Monitoring, keyboard listener status, and playback
+- Menu bar controls for quick preview, muting, volume, effects, and sound switching
 - Custom sound pack import using local `.thockpack`, `.zip`, or folder packs
 
 KeyThock is for people who want their keyboard to feel more personal, cozy, and fun without changing hardware.
@@ -70,28 +72,38 @@ keyboard,mechanical,typing,sound,thock,clacky,creamy,mac,menu bar,asmr
 
 ## App Review Notes
 
-KeyThock is a local keyboard sound utility for macOS.
+KeyThock is a local keyboard sound utility for macOS. Its core feature is to play a short local sound at the moment the user presses a physical key while typing in their normal Mac apps.
 
-The app requests Input Monitoring because it needs to detect keyboard events while the user types in other apps, then immediately play a local keypress sound. The app uses the event key code and event phase only for local sound selection.
+`NSEvent.addLocalMonitorForEvents` is not sufficient for this app because it only observes events delivered to KeyThock itself. KeyThock needs to respond while the user types in other apps, so it requests macOS Input Monitoring and uses a listen-only keyboard event tap for timing and key identity.
+
+The app does not use Accessibility APIs to inspect UI elements, control other apps, automate the Mac, read screen contents, or provide non-accessibility UI control. Keyboard access is used only for immediate local audio playback.
 
 Privacy-specific behavior:
+- Input Monitoring is used only to detect key press and key release timing for local sound playback.
+- Event key identity is used only to choose the matching local audio sample.
 - No typed text is stored.
 - No words, sentences, passwords, or text content are reconstructed.
+- Raw key events and live key identities are not logged or persisted after playback.
+- The typed-character countdown stores only a remaining count, not typed characters.
 - No keyboard events are sent over the network.
 - No analytics SDKs, ads, or tracking SDKs are included.
 - The app does not read clipboard contents.
 - The app does not capture screenshots.
 - Settings and sound preferences are stored locally with UserDefaults.
+- User-created per-key sample assignments are stored locally only as settings and are not derived from a typing history.
 - Imported sound packs are copied locally into the app's Application Support folder.
 
 Suggested review flow:
 1. Launch KeyThock.
 2. Grant Input Monitoring permission when prompted, or open System Settings from the app.
-3. Choose a sound pack from the menu bar or Sound Packs tab.
-4. Use the Test Typing Pad or type in another app to hear local keyboard sounds.
-5. Open the Keys tab and click keys to assign per-key samples.
-6. Open Mixer and try presets such as Deep, Crisp, or Calm.
-7. Open Diagnostics to verify audio output, permission status, keyboard listener status, and latest key event.
+3. Quit and reopen KeyThock if macOS asks after enabling the permission.
+4. Choose a sound pack from the menu bar or Sound Packs tab.
+5. Type in Notes, TextEdit, Safari, or another normal Mac app to hear local keyboard sounds.
+6. Open the Keys tab and click keys to assign per-key samples.
+7. Open Recipes and add suggested per-app recipes.
+8. Open Focus and try the Pomodoro timer or typed-character countdown.
+9. Open Mixer and try presets such as Deep, Crisp, or Calm.
+10. Open Diagnostics to verify audio output, Input Monitoring, keyboard listener status, and latest key event.
 
 No account is required. No network service is required.
 
@@ -140,7 +152,7 @@ The file access entitlement is used only when the user explicitly imports a loca
 
 Build note:
 
-Local QA builds are intentionally signed without App Sandbox entitlements because global keyboard monitoring depends on macOS Input Monitoring. Use `KEYTHOCK_SIGNING_PROFILE=appstore ./scripts/build_app.sh` only when producing a sandboxed App Store validation build.
+Use `KEYTHOCK_SIGNING_PROFILE=appstore ./scripts/build_app.sh` when producing a sandboxed App Store validation build.
 
 ## Screenshots
 
@@ -149,13 +161,13 @@ App Store Connect requires at least one screenshot and accepts up to ten. Recomm
 1. Sound Packs: recorded keyboard sounds and preview buttons.
 2. Keys: full keyboard editor with per-key sample assignments.
 3. Mixer: presets and level/tone/playback controls.
-4. Menu Bar: compact controls for volume, pack switching, preview, and mute.
-5. Diagnostics: audio, Input Monitoring, listener, and typing test status.
-6. Privacy: local-only explanation and Input Monitoring controls.
+4. Menu Bar: compact controls for volume, pack switching, effects, preview, and mute.
+5. Diagnostics: audio, Input Monitoring, listener, and typing status.
+6. Privacy: local-only explanation and Input Monitoring purpose.
 
 Optional app preview video:
 
-Landscape macOS video showing sound pack preview, key assignment, and typing with the menu bar open.
+Landscape macOS video showing sound pack preview, key assignment, mixer changes, and typing in a normal Mac app.
 
 ## Release Checklist
 
@@ -167,16 +179,16 @@ Landscape macOS video showing sound pack preview, key assignment, and typing wit
 - Verify App Sandbox information if App Store Connect asks for entitlement details.
 - Archive from `KeyThock.xcodeproj` with the `KeyThock` scheme and a Mac App Store distribution certificate/provisioning profile.
 - Do not archive from the Swift Package view; that creates a generic archive and Organizer will not show the App Store distribution option.
-- Test permission flow on a clean macOS user account before submission.
-- Confirm Input Monitoring review note is included.
+- Test Input Monitoring on a clean macOS user account before submission.
+- Confirm review notes explain why Input Monitoring is required for system-wide typing sounds.
 - Confirm app privacy answers say no tracking and no data collected.
 
-## Apple References Used
+## Apple References
 
-- Apple requires accurate metadata before review and recommends complete product page assets: https://developer.apple.com/app-store/submitting/
-- App information fields include name, subtitle, privacy policy URL, bundle ID, category, and age rating: https://developer.apple.com/help/app-store-connect/reference/app-information/app-information
-- Screenshots: minimum one, maximum ten: https://developer.apple.com/help/app-store-connect/manage-app-information/upload-app-previews-and-screenshots
-- App privacy details must represent data collection and tracking practices: https://developer.apple.com/app-store/app-privacy-details/
-- App Review checks submitted apps for safety, security, and privacy: https://developer.apple.com/app-store/review/guidelines/
-- Mac App Store apps must use App Sandbox: https://developer.apple.com/documentation/security/app-sandbox
-- Privacy manifests describe collected data and required reason APIs: https://developer.apple.com/documentation/bundleresources/privacy-manifest-files
+- App submission overview: https://developer.apple.com/app-store/submitting/
+- App information fields: https://developer.apple.com/help/app-store-connect/reference/app-information/app-information
+- Screenshots and app previews: https://developer.apple.com/help/app-store-connect/manage-app-information/upload-app-previews-and-screenshots
+- App privacy details: https://developer.apple.com/app-store/app-privacy-details/
+- App Review Guidelines: https://developer.apple.com/app-store/review/guidelines/
+- App Sandbox: https://developer.apple.com/documentation/security/app-sandbox
+- Privacy manifests: https://developer.apple.com/documentation/bundleresources/privacy-manifest-files

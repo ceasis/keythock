@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 final class SettingsStore: ObservableObject {
     private let defaultsKey = "settings.snapshot.v1"
+    private let customMixerPresetsKey = "settings.customMixerPresets.v1"
     private let dryDefaultMixerMigrationKey = "migration.dryDefaultMixer.v1"
     private let drySmallRoomMigrationKey = "migration.drySmallRoom.v2"
     private let defaultVolumeMigrationKey = "migration.defaultVolume25.v2"
@@ -20,6 +21,8 @@ final class SettingsStore: ObservableObject {
     @Published var pitchShiftSemitones: Float { didSet { save() } }
     @Published var pitchVariation: Float { didSet { save() } }
     @Published var sampleVariation: Bool { didSet { save() } }
+    @Published var samplePlaybackMode: SamplePlaybackMode { didSet { sampleVariation = samplePlaybackMode.usesMultipleSamples; save() } }
+    @Published var sampleShuffleSeed: Int { didSet { save() } }
     @Published var bassBoost: Float { didSet { save() } }
     @Published var brightness: Float { didSet { save() } }
     @Published var echoAmount: Float { didSet { save() } }
@@ -40,14 +43,19 @@ final class SettingsStore: ObservableObject {
     @Published var quietHoursEndMinutes: Int { didSet { save() } }
     @Published var quietHoursLowerVolume: Bool { didSet { save() } }
     @Published var quietHoursVolume: Float { didSet { save() } }
+    @Published var pomodoroWorkMinutes: Int { didSet { save() } }
+    @Published var pomodoroBreakMinutes: Int { didSet { save() } }
+    @Published var characterCountdownTarget: Int { didSet { save() } }
     @Published var temporaryMuteUntil: Date? { didSet { save() } }
     @Published var onboardingCompletedVersion: String? { didSet { save(); applyDockPolicy() } }
     @Published var hideBluetoothWarning: Bool { didSet { save() } }
     @Published var keySampleOverrides: [String: [String: Int]] { didSet { save() } }
+    @Published var customMixerPresets: [CustomMixerPreset] { didSet { saveCustomMixerPresets() } }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         let snapshot = Self.loadSnapshot(defaults: defaults, key: defaultsKey)
+        let mixerPresets = Self.loadCustomMixerPresets(defaults: defaults, key: customMixerPresetsKey)
         appEnabled = snapshot.appEnabled
         currentPackId = snapshot.currentPackId
         masterVolume = snapshot.masterVolume
@@ -58,6 +66,8 @@ final class SettingsStore: ObservableObject {
         pitchShiftSemitones = snapshot.pitchShiftSemitones ?? 0
         pitchVariation = snapshot.pitchVariation
         sampleVariation = snapshot.sampleVariation
+        samplePlaybackMode = snapshot.resolvedSamplePlaybackMode
+        sampleShuffleSeed = snapshot.sampleShuffleSeed ?? 0
         bassBoost = snapshot.bassBoost
         brightness = snapshot.brightness
         echoAmount = snapshot.echoAmount ?? 0
@@ -78,10 +88,14 @@ final class SettingsStore: ObservableObject {
         quietHoursEndMinutes = snapshot.quietHoursEndMinutes
         quietHoursLowerVolume = snapshot.quietHoursLowerVolume
         quietHoursVolume = snapshot.quietHoursVolume
+        pomodoroWorkMinutes = snapshot.pomodoroWorkMinutes ?? 25
+        pomodoroBreakMinutes = snapshot.pomodoroBreakMinutes ?? 5
+        characterCountdownTarget = snapshot.characterCountdownTarget ?? 500
         temporaryMuteUntil = snapshot.temporaryMuteUntil
         onboardingCompletedVersion = snapshot.onboardingCompletedVersion
         hideBluetoothWarning = snapshot.hideBluetoothWarning
         keySampleOverrides = snapshot.keySampleOverrides ?? [:]
+        customMixerPresets = mixerPresets
         migrateDryDefaultMixer()
         migrateDefaultVolume()
 
@@ -102,6 +116,8 @@ final class SettingsStore: ObservableObject {
             pitchShiftSemitones: pitchShiftSemitones,
             pitchVariation: pitchVariation,
             sampleVariation: sampleVariation,
+            samplePlaybackMode: samplePlaybackMode,
+            sampleShuffleSeed: sampleShuffleSeed,
             bassBoost: bassBoost,
             brightness: brightness,
             echoAmount: echoAmount,
@@ -122,6 +138,9 @@ final class SettingsStore: ObservableObject {
             quietHoursEndMinutes: quietHoursEndMinutes,
             quietHoursLowerVolume: quietHoursLowerVolume,
             quietHoursVolume: quietHoursVolume,
+            pomodoroWorkMinutes: pomodoroWorkMinutes,
+            pomodoroBreakMinutes: pomodoroBreakMinutes,
+            characterCountdownTarget: characterCountdownTarget,
             temporaryMuteUntil: temporaryMuteUntil,
             onboardingCompletedVersion: onboardingCompletedVersion,
             hideBluetoothWarning: hideBluetoothWarning,
@@ -156,7 +175,8 @@ final class SettingsStore: ObservableObject {
         modifierVolume = 0.3
         pitchShiftSemitones = 0
         pitchVariation = 0.02
-        sampleVariation = true
+        samplePlaybackMode = .stablePerKey
+        sampleShuffleSeed = 0
         bassBoost = 0
         brightness = 0
         echoAmount = 0
@@ -181,6 +201,8 @@ final class SettingsStore: ObservableObject {
         pitchShiftSemitones = fresh.pitchShiftSemitones ?? 0
         pitchVariation = fresh.pitchVariation
         sampleVariation = fresh.sampleVariation
+        samplePlaybackMode = fresh.resolvedSamplePlaybackMode
+        sampleShuffleSeed = fresh.sampleShuffleSeed ?? 0
         bassBoost = fresh.bassBoost
         brightness = fresh.brightness
         echoAmount = fresh.echoAmount ?? 0
@@ -201,10 +223,14 @@ final class SettingsStore: ObservableObject {
         quietHoursEndMinutes = fresh.quietHoursEndMinutes
         quietHoursLowerVolume = fresh.quietHoursLowerVolume
         quietHoursVolume = fresh.quietHoursVolume
+        pomodoroWorkMinutes = fresh.pomodoroWorkMinutes ?? 25
+        pomodoroBreakMinutes = fresh.pomodoroBreakMinutes ?? 5
+        characterCountdownTarget = fresh.characterCountdownTarget ?? 500
         temporaryMuteUntil = fresh.temporaryMuteUntil
         onboardingCompletedVersion = fresh.onboardingCompletedVersion
         hideBluetoothWarning = fresh.hideBluetoothWarning
         keySampleOverrides = fresh.keySampleOverrides ?? [:]
+        customMixerPresets = []
     }
 
     func keySampleOverride(packId: String, keyCode: Int) -> Int? {
@@ -240,9 +266,50 @@ final class SettingsStore: ObservableObject {
         return url
     }
 
+    func saveCustomMixerPreset(named name: String) {
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let presetName = cleanName.isEmpty ? "Custom Preset \(customMixerPresets.count + 1)" : cleanName
+        let preset = CustomMixerPreset(name: presetName, snapshot: snapshot)
+        customMixerPresets.insert(preset, at: 0)
+    }
+
+    func applyCustomMixerPreset(_ preset: CustomMixerPreset) {
+        masterVolume = preset.masterVolume
+        pressVolume = preset.pressVolume
+        releaseVolume = preset.releaseVolume
+        spacebarVolume = preset.spacebarVolume
+        modifierVolume = preset.modifierVolume
+        pitchShiftSemitones = preset.pitchShiftSemitones
+        pitchVariation = preset.pitchVariation
+        samplePlaybackMode = preset.samplePlaybackMode ?? (preset.sampleVariation ? .stablePerKey : .singleSample)
+        bassBoost = preset.bassBoost
+        brightness = preset.brightness
+        echoAmount = preset.echoAmount
+        roomAmount = preset.roomAmount
+        limiterEnabled = preset.limiterEnabled
+        autoDuckingEnabled = preset.autoDuckingEnabled
+        releaseSoundsEnabled = preset.releaseSoundsEnabled
+        modifierSoundsEnabled = preset.modifierSoundsEnabled
+        repeatMode = preset.repeatMode
+        maxRepeatSoundsPerSecond = preset.maxRepeatSoundsPerSecond
+    }
+
+    func deleteCustomMixerPreset(_ preset: CustomMixerPreset) {
+        customMixerPresets.removeAll { $0.id == preset.id }
+    }
+
+    func shuffleAutomaticSamples() {
+        sampleShuffleSeed = Int.random(in: 1...Int.max)
+    }
+
     private func save() {
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
         defaults.set(data, forKey: defaultsKey)
+    }
+
+    private func saveCustomMixerPresets() {
+        guard let data = try? JSONEncoder.pretty.encode(customMixerPresets) else { return }
+        defaults.set(data, forKey: customMixerPresetsKey)
     }
 
     private func migrateDryDefaultMixer() {
@@ -275,6 +342,14 @@ final class SettingsStore: ObservableObject {
             return SettingsSnapshot()
         }
         return snapshot
+    }
+
+    private static func loadCustomMixerPresets(defaults: UserDefaults, key: String) -> [CustomMixerPreset] {
+        guard let data = defaults.data(forKey: key),
+              let presets = try? JSONDecoder().decode([CustomMixerPreset].self, from: data) else {
+            return []
+        }
+        return presets
     }
 
     private func applyLaunchAtLogin() {

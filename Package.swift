@@ -19,10 +19,13 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("AppKit"),
-                .linkedFramework("ApplicationServices"),
-                .linkedFramework("Carbon"),
                 .linkedFramework("ServiceManagement")
             ]
+        ),
+        .testTarget(
+            name: "KeyThockTests",
+            dependencies: ["KeyThock"],
+            path: "Tests/KeyThockTests"
         )
     ]
 )
